@@ -1,5 +1,9 @@
 *.jsonl
 *.inter
+*.json
 *.item
 *.csv
 .venv
+myenv
+*__pycache__
+*.parquet
