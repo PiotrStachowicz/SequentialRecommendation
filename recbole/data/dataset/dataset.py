@@ -242,6 +242,9 @@ class Dataset(object):
             token (str): dataset name.
             dataset_path (str): path of dataset dir.
         """
+        
+        dataset_path = './recbole/data/' + dataset_path
+
         if not os.path.exists(dataset_path):
             self._download()
         self._load_inter_feat(token, dataset_path)
