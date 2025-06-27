@@ -1,5 +1,11 @@
-# DIF-SR
-The source code for our SIGIR 2022 Paper [**"Decoupled Side Information Fusion for Sequential Recommendation"**](https://arxiv.org/abs/2204.11046)
+# ...
+...
+## Engineering Thesis Context
+...
+##### Thesis Authors: Jakub Malczak, Piotr Stachowicz 
+
+## DIF-SR
+SIGIR 2022 Paper [**"Decoupled Side Information Fusion for Sequential Recommendation"**](https://arxiv.org/abs/2204.11046)
 
 ## Overview
 We propose DIF-SR to effectively fuse side information for SR via
@@ -25,6 +31,10 @@ Our code is based on PyTorch 1.8.1 and runnable for both windows and ubuntu serv
 > + torch==1.8.1
 > + tensorboard==2.7.0
 
+There is also a prepared requirements.txt file. You may install required dependencies via:
+```pip install -r requirements.txt```
+
+###### You may experience some errors with torch cuda installation, since requirements.txt was made for nvidia rtx4060
 
 ## Usage
 
@@ -52,29 +62,20 @@ $ tree
 
 Run `DIF.sh`.
 
-
-## Reproduction
-See _benchmarks_ folder to reproduce the results.
-For example, we show the detailed reproduce steps for the results of DIF-SR on the Amazon Beauty dataset in DIF_Amazon_Beauty.md file.
-
-Due to some stochastic factors, slightly tuning the hyper-parameters using grid search is necessary if you want to reproduce the performance. If you have any question, please issue the project or email us and we will reply you soon.
-
-## Cite
-
-If you find this repo useful, please cite
-```
-@inproceedings{Xie2022DIF,
-  author    = {Yueqi Xie and
-               Peilin Zhou and
-               Sunghun Kim},
-  title     = {Decoupled Side Information Fusion for Sequential Recommendation},
-  booktitle= {International ACM SIGIR Conference on Research and Development in Information Retrieval (SIGIR)},
-  year      = {2022}
-}
-```
-
 ## Credit
 This repo is based on [RecBole](https://github.com/RUCAIBox/RecBole).
 
-## Contact
-Feel free to contact us if there is any question. (YueqiXIE, yxieay@connect.ust.hk; Peilin Zhou, zhoupalin@gmail.com; Russell KIM, russellkim@upstage.ai)
+## Citation
+#### Title:
+Decoupled Side Information Fusion for Sequential Recommendation
+
+#### Book title:
+International ACM SIGIR Conference on Research and Development in Information Retrieval (SIGIR)
+
+#### Year:
+2022
+
+##### Authors:
+Yueqi Xie (yxieay@connect.ust.hk)
+Peilin Zhou (zhoupalin@gmail.com)
+Russell Kim (russellkim@upstage.ai)
