@@ -146,11 +146,16 @@ class SASRecD(SequentialRecommender):
             sparse_embedding, dense_embedding = feature_embed_layer(None, item_seq)
             sparse_embedding = sparse_embedding['item']
             dense_embedding = dense_embedding['item']
-        # concat the sparse embedding and float embedding
+            # concat the sparse embedding and float embedding
             if sparse_embedding is not None:
                 feature_table.append(sparse_embedding)
             if dense_embedding is not None:
                 feature_table.append(dense_embedding)
+
+            # Title embedding
+            title_emb = feature_embed_layer.item_feat['ent_emb'][item_seq]
+            title_emb = title_emb.unsqueeze(-2)  # [B, L, 1, D]
+            feature_table.append(title_emb)
 
         feature_emb = feature_table
         input_emb = item_emb

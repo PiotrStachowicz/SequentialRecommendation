@@ -11,9 +11,16 @@ save_dataset: False
 save_dataloaders: False
 
 # dataset
+
+# Additional Atomic Files
+additional_feat_suffix: [ent]
 load_col:
     inter: [user_id, item_id, rating, timestamp]
     item: ['item_id','title','sales_rank','price','brand','categories','sales_type']
+    # Pretrained title embeddings
+    ent: [ent_id, ent_emb]
+# Map ent_id -> item_id to JOIN datasets
+alias_of_item_id: [ent_id]
 MAX_ITEM_LIST_LENGTH: 50
 USER_ID_FIELD: user_id
 ITEM_ID_FIELD: item_id
@@ -37,7 +44,7 @@ attn_dropout_prob: 0.3
 hidden_act: 'gelu'
 layer_norm_eps: 1e-12
 initializer_range: 0.02
-selected_features: ['categories']
+selected_features: ['categories', 'ent']
 pooling_mode: 'sum'
 loss_type: 'CE'
 weight_sharing: 'not'

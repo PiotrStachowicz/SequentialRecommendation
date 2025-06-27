@@ -7,3 +7,5 @@
 myenv
 *__pycache__
 *.parquet
+*log*
+*.ent
