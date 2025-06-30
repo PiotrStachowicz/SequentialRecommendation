@@ -14,6 +14,7 @@ Reference:
 import torch
 from torch import nn
 
+
 from recbole.model.abstract_recommender import SequentialRecommender
 from recbole.model.layers import FeatureSeqEmbLayer,DIFTransformerEncoder
 from recbole.model.loss import BPRLoss
