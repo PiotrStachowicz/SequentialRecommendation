@@ -56,7 +56,7 @@ class SASRecD(SequentialRecommender):
         self.item_embedding = nn.Embedding(self.n_items, self.hidden_size, padding_idx=0)
         self.position_embedding = nn.Embedding(self.max_seq_length, self.hidden_size)
 
-        self.title_embedding = dataset.ent_feat['ent_emb']
+        # self.title_embedding = dataset.ent_feat['ent_emb']
 
         self.feature_embed_layer_list = nn.ModuleList(
             [copy.deepcopy(FeatureSeqEmbLayer(dataset,self.attribute_hidden_size[_],[self.selected_features[_]],self.pooling_mode,self.device)) for _
@@ -154,10 +154,10 @@ class SASRecD(SequentialRecommender):
             if dense_embedding is not None:
                 feature_table.append(dense_embedding)
 
-        # Title embedding
-        title_emb = self.title_embedding[item_seq]
-        title_emb = title_emb.unsqueeze(-2)  # [B, L, 1, D]
-        feature_table.append(title_emb)
+        # # Title embedding
+        # title_emb = self.title_embedding[item_seq]
+        # title_emb = title_emb.unsqueeze(-2)  # [B, L, 1, D]
+        # feature_table.append(title_emb)
 
         feature_emb = feature_table
         input_emb = item_emb
