@@ -11,10 +11,14 @@ save_dataset: False
 save_dataloaders: False
 
 # dataset
-
+additional_feat_suffix: [ent]
 load_col:
     inter: [user_id, item_id, rating, timestamp]
     item: ['item_id','title','sales_rank','price','brand','categories','sales_type']
+    ent: ['ent_id', 'ent_emb']
+alias_of_item_id: ['ent_id']
+preload_weight:
+    ent_id: ent_emb
 MAX_ITEM_LIST_LENGTH: 50
 USER_ID_FIELD: user_id
 ITEM_ID_FIELD: item_id
@@ -44,7 +48,7 @@ loss_type: 'CE'
 weight_sharing: 'not'
 fusion_type: 'gate'
 lamdas: [5]
-attribute_predictor: 'linear'
+attribute_predictor: 'not'
 
 # training settings
 epochs: 200
