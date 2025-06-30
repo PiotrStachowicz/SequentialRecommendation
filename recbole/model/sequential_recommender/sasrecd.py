@@ -12,6 +12,7 @@ Reference:
 """
 
 import torch
+import numpy as np
 from torch import nn
 
 from recbole.model.abstract_recommender import SequentialRecommender
@@ -56,7 +57,9 @@ class SASRecD(SequentialRecommender):
         self.item_embedding = nn.Embedding(self.n_items, self.hidden_size, padding_idx=0)
         self.position_embedding = nn.Embedding(self.max_seq_length, self.hidden_size)
 
-        pretrained_title_emb = dataset.get_preload_weight('ent_id')
+        pretrained_title_emb = dataset.get_preload_weight('ent_id').astype(np.float32)
+        print("Pretrained weights shape:", pretrained_title_emb.shape)
+        print("First embedding:", pretrained_title_emb[0][:5])
         self.title_embedding = nn.Embedding.from_pretrained(torch.from_numpy(pretrained_title_emb))
 
         self.trm_encoder = DIFTransformerEncoder(
@@ -76,7 +79,10 @@ class SASRecD(SequentialRecommender):
 
         self.n_attributes = {}
         for attribute in self.selected_features:
-            self.n_attributes[attribute] = len(dataset.field2token_id[attribute])
+            if attribute in dataset.field2token_id:
+                self.n_attributes[attribute] = len(dataset.field2token_id[attribute])
+            else:
+                self.n_attributes[attribute] = 0
         if self.attribute_predictor == 'MLP':
             self.ap = nn.Sequential(nn.Linear(in_features=self.hidden_size,
                                                        out_features=self.hidden_size),
@@ -104,7 +110,7 @@ class SASRecD(SequentialRecommender):
 
         # parameters initialization
         self.apply(self._init_weights)
-        self.other_parameter_name = ['feature_embed_layer_list']
+        self.other_parameter_name = []
         #self.ent_embedding.weight.requires_grad = False
 
 
