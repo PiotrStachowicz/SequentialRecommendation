@@ -4,7 +4,7 @@ use_gpu: True
 seed: 212
 state: INFO
 reproducibility: True
-data_path: './recbole/data/dataset/'
+data_path: '/content/SequentialRecommendation/recbole/data/dataset/'
 checkpoint_dir: 'saved'
 show_progress: True
 save_dataset: False
@@ -14,7 +14,7 @@ save_dataloaders: False
 additional_feat_suffix: [ent]
 load_col:
     inter: [user_id, item_id, rating, timestamp]
-    item: ['item_id','title','sales_rank','price','brand','categories','sales_type']
+    item: ['item_id']
     ent: ['ent_id', 'ent_emb']
 alias_of_item_id: ['ent_id']
 preload_weight:
@@ -52,7 +52,7 @@ attribute_predictor: 'not'
 
 # training settings
 epochs: 200
-train_batch_size: 2048
+train_batch_size: 1024
 learner: adam
 learning_rate: 0.0001
 eval_step: 2
