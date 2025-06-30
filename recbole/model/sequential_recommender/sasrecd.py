@@ -56,7 +56,8 @@ class SASRecD(SequentialRecommender):
         self.item_embedding = nn.Embedding(self.n_items, self.hidden_size, padding_idx=0)
         self.position_embedding = nn.Embedding(self.max_seq_length, self.hidden_size)
 
-        # self.title_embedding = dataset.ent_feat['ent_emb']
+        pretrained_title_emb = dataset.get_preload_weight('ent_id')
+        self.title_embedding = nn.Embedding.from_pretrained(torch.from_numpy(pretrained_title_emb))
 
         self.feature_embed_layer_list = nn.ModuleList(
             [copy.deepcopy(FeatureSeqEmbLayer(dataset,self.attribute_hidden_size[_],[self.selected_features[_]],self.pooling_mode,self.device)) for _
@@ -108,6 +109,8 @@ class SASRecD(SequentialRecommender):
         # parameters initialization
         self.apply(self._init_weights)
         self.other_parameter_name = ['feature_embed_layer_list']
+        #self.ent_embedding.weight.requires_grad = False
+
 
     def _init_weights(self, module):
         """ Initialize the weights """
