@@ -59,10 +59,6 @@ class SASRecD(SequentialRecommender):
         pretrained_title_emb = dataset.get_preload_weight('ent_id')
         self.title_embedding = nn.Embedding.from_pretrained(torch.from_numpy(pretrained_title_emb))
 
-        self.feature_embed_layer_list = nn.ModuleList(
-            [copy.deepcopy(FeatureSeqEmbLayer(dataset,self.attribute_hidden_size[_],[self.selected_features[_]],self.pooling_mode,self.device)) for _
-             in range(len(self.selected_features))])
-
         self.trm_encoder = DIFTransformerEncoder(
             n_layers=self.n_layers,
             n_heads=self.n_heads,
@@ -147,20 +143,9 @@ class SASRecD(SequentialRecommender):
         position_embedding = self.position_embedding(position_ids)
 
         feature_table = []
-        for feature_embed_layer in self.feature_embed_layer_list:
-            sparse_embedding, dense_embedding = feature_embed_layer(None, item_seq)
-            sparse_embedding = sparse_embedding['item']
-            dense_embedding = dense_embedding['item']
-            # concat the sparse embedding and float embedding
-            if sparse_embedding is not None:
-                feature_table.append(sparse_embedding)
-            if dense_embedding is not None:
-                feature_table.append(dense_embedding)
-
-        # # Title embedding
-        # title_emb = self.title_embedding[item_seq]
-        # title_emb = title_emb.unsqueeze(-2)  # [B, L, 1, D]
-        # feature_table.append(title_emb)
+        title_emb = self.title_embedding(item_seq)
+        title_emb = title_emb.unsqueeze(-2)
+        feature_table.append(title_emb)
 
         feature_emb = feature_table
         input_emb = item_emb
