@@ -187,10 +187,8 @@ class SASRecD(SequentialRecommender):
 
             if self.attribute_predictor == 'title_cos_sim':
                 loss_dic = {'item_loss': loss}
-                # Retrieve true title embeddings for positive items
                 true_emb = self.title_embedding(pos_items)
 
-                # Project sequence output to title embedding space
                 pred_emb = self.ap(seq_output)
 
                 # Normalize embeddings to unit vectors
@@ -201,7 +199,6 @@ class SASRecD(SequentialRecommender):
                 cos_sim = (pred_emb_norm * true_emb_norm).sum(dim=-1)
                 title_loss = (1 - cos_sim).mean()
 
-                # Combine losses
                 total_loss = loss + self.lamdas[0] * title_loss
                 loss_dic[self.attribute_predictor] = title_loss
                 loss_dic['total_loss'] = total_loss
