@@ -1,8 +1,10 @@
 import os
 import base64
 from tqdm import tqdm
+from PIL import Image
+from io import BytesIO
 
-IMAGE_DIR = "./images"  # or wherever your images are
+IMAGE_DIR = "./images"
 fixed = 0
 skipped = 0
 
@@ -23,14 +25,9 @@ for filename in tqdm(os.listdir(IMAGE_DIR)):
             skipped += 1
             continue
 
-        # Try verifying decoded image with PIL
-        from PIL import Image
-        from io import BytesIO
-
         img = Image.open(BytesIO(decoded))
-        img.verify()  # Ensure it's a valid image
+        img.verify()
 
-        # If valid, overwrite the file
         with open(filepath, "wb") as f:
             f.write(decoded)
 
