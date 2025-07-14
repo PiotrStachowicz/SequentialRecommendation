@@ -97,6 +97,9 @@ class SASRecD(SequentialRecommender):
             self.ap = nn.ModuleList(
                 [copy.deepcopy(nn.Linear(in_features=self.hidden_size, out_features=self.n_attributes[_]))
                  for _ in self.selected_features])
+        elif self.attribute_predictor == 'title_cos_sim':
+            title_dim = pretrained_title_emb.shape[1]
+            self.ap = nn.Linear(self.hidden_size, title_dim)
 
         self.LayerNorm = nn.LayerNorm(self.hidden_size, eps=self.layer_norm_eps)
         self.dropout = nn.Dropout(self.hidden_dropout_prob)
@@ -112,7 +115,6 @@ class SASRecD(SequentialRecommender):
         # parameters initialization
         self.apply(self._init_weights)
         self.other_parameter_name = []
-        #self.ent_embedding.weight.requires_grad = False
 
 
     def _init_weights(self, module):
@@ -182,7 +184,30 @@ class SASRecD(SequentialRecommender):
             test_item_emb = self.item_embedding.weight
             logits = torch.matmul(seq_output, test_item_emb.transpose(0, 1))
             loss = self.loss_fct(logits, pos_items)
-            if self.attribute_predictor!='' and self.attribute_predictor!='not':
+
+            if self.attribute_predictor == 'title_cos_sim':
+                loss_dic = {'item_loss': loss}
+                # Retrieve true title embeddings for positive items
+                true_emb = self.title_embedding(pos_items)
+
+                # Project sequence output to title embedding space
+                pred_emb = self.ap(seq_output)
+
+                # Normalize embeddings to unit vectors
+                pred_emb_norm = torch.nn.functional.normalize(pred_emb, p=2, dim=-1)
+                true_emb_norm = torch.nn.functional.normalize(true_emb, p=2, dim=-1)
+
+                # Compute cosine similarity
+                cos_sim = (pred_emb_norm * true_emb_norm).sum(dim=-1)
+                title_loss = (1 - cos_sim).mean()
+
+                # Combine losses
+                total_loss = loss + self.lamdas[0] * title_loss
+                loss_dic[self.attribute_predictor] = title_loss
+                loss_dic['total_loss'] = total_loss
+                return total_loss
+
+            elif self.attribute_predictor!='' and self.attribute_predictor!='not':
                 loss_dic = {'item_loss':loss}
                 attribute_loss_sum = 0
                 for i, a_predictor in enumerate(self.ap):
