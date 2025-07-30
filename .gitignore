@@ -13,3 +13,5 @@ myenv
 *.image
 *.image2
 *.title
+saved
+*.pth

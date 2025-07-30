@@ -48,7 +48,7 @@ loss_type: 'CE'
 weight_sharing: 'not'
 fusion_type: 'gate'
 lamdas: [5]
-attribute_predictor: 'not'
+attribute_predictor: 'cos_sim'
 
 # training settings
 epochs: 40

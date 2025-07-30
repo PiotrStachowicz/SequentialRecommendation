@@ -92,8 +92,6 @@ class SASRecD(SequentialRecommender):
         for attribute in self.selected_features:
             if attribute in dataset.field2token_id:
                 self.n_attributes[attribute] = len(dataset.field2token_id[attribute])
-            else:
-                self.n_attributes[attribute] = 0
         if self.attribute_predictor == 'MLP':
             self.ap = nn.Sequential(nn.Linear(in_features=self.hidden_size,
                                                        out_features=self.hidden_size),
@@ -109,8 +107,8 @@ class SASRecD(SequentialRecommender):
                  for _ in self.selected_features])
         elif self.attribute_predictor == 'cos_sim':
             self.ap = nn.ModuleList(
-                [nn.Linear(in_features=self.hidden_size, out_features=self.n_attributes[_])
-                 for _ in self.selected_features])
+                [nn.Linear(in_features=self.hidden_size, out_features=self.feature_embed_layer_list[_].weight.shape[1])
+                 for _ in range(len(self.selected_features))])
 
         self.LayerNorm = nn.LayerNorm(self.hidden_size, eps=self.layer_norm_eps)
         self.dropout = nn.Dropout(self.hidden_dropout_prob)
@@ -130,6 +128,10 @@ class SASRecD(SequentialRecommender):
 
     def _init_weights(self, module):
         """ Initialize the weights """
+        for entry in self.feature_embed_layer_list:
+            if module is entry:
+                return
+
         if isinstance(module, (nn.Linear, nn.Embedding)):
             # Slightly different from the TF version which uses truncated_normal for initialization
             # cf https://github.com/pytorch/pytorch/pull/5617
@@ -213,7 +215,7 @@ class SASRecD(SequentialRecommender):
                 for i, a_predictor in enumerate(self.ap):
                     true_emb = self.feature_embed_layer_list[i](pos_items)
 
-                    pred_emb = self.a_predictor(seq_output)
+                    pred_emb = a_predictor(seq_output)
 
                     # Normalize embeddings to unit vectors
                     pred_emb_norm = torch.nn.functional.normalize(pred_emb, p=2, dim=-1)
