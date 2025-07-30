@@ -9,3 +9,7 @@ myenv
 *.parquet
 *log*
 *.ent
+*.jpg
+*.image
+*.image2
+*.title
