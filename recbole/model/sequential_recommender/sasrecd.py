@@ -43,6 +43,7 @@ class SASRecD(SequentialRecommender):
         self.layer_norm_eps = config['layer_norm_eps']
 
         self.selected_features = config['selected_features']
+        self.feature_type = config['feature_type']
         self.pooling_mode = config['pooling_mode']
         self.device = config['device']
         self.num_feature_field = len(config['selected_features'])
@@ -58,20 +59,35 @@ class SASRecD(SequentialRecommender):
         self.item_embedding = nn.Embedding(self.n_items, self.hidden_size, padding_idx=0)
         self.position_embedding = nn.Embedding(self.max_seq_length, self.hidden_size)
 
-        # self.feature_embed_layer_list = nn.ModuleList(
-        #     [copy.deepcopy(FeatureSeqEmbLayer(dataset, self.attribute_hidden_size[_], [self.selected_features[_]],
-        #                                       self.pooling_mode, self.device)) for _
-        #      in range(len(self.selected_features))])
+        layer_list = []
 
-        self.feature_embed_layer_list = nn.ModuleList(
-            [
-                nn.Embedding.from_pretrained(
-                    torch.from_numpy(
-                        dataset.get_preload_weight(feat_id).astype(np.float32)
+        for i, feature in enumerate(self.selected_features):
+            feature_type = self.feature_type[i]
+
+            if feature_type == 'static':
+                layer_list.append(
+                    nn.Embedding.from_pretrained(
+                        torch.from_numpy(
+                            dataset.get_preload_weight(
+                                list(dataset.config['preload_weight'].keys())[i]
+                            ).astype(np.float32)
+                        )
                     )
-                ) for feat_id in dataset.config['preload_weight'].keys()
-            ]
-        )
+                )
+            elif feature_type == 'categorical':
+                layer_list.append(
+                    copy.deepcopy(
+                        FeatureSeqEmbLayer(
+                            dataset,
+                            self.attribute_hidden_size[i],
+                            [self.selected_features[i]],
+                            self.pooling_mode,
+                            self.device
+                        )
+                    )
+                )
+
+        self.feature_embed_layer_list = nn.ModuleList(layer_list)
 
         self.trm_encoder = DIFTransformerEncoder(
             n_layers=self.n_layers,
@@ -92,23 +108,34 @@ class SASRecD(SequentialRecommender):
         for attribute in self.selected_features:
             if attribute in dataset.field2token_id:
                 self.n_attributes[attribute] = len(dataset.field2token_id[attribute])
-        if self.attribute_predictor == 'MLP':
-            self.ap = nn.Sequential(nn.Linear(in_features=self.hidden_size,
-                                                       out_features=self.hidden_size),
-                                             nn.BatchNorm1d(num_features=self.hidden_size),
-                                             nn.ReLU(),
-                                             # final logits
-                                             nn.Linear(in_features=self.hidden_size,
-                                                       out_features=self.n_attributes)
-                                             )
-        elif self.attribute_predictor == 'linear':
-            self.ap = nn.ModuleList(
-                [copy.deepcopy(nn.Linear(in_features=self.hidden_size, out_features=self.n_attributes[_]))
-                 for _ in self.selected_features])
-        elif self.attribute_predictor == 'cos_sim':
-            self.ap = nn.ModuleList(
-                [nn.Linear(in_features=self.hidden_size, out_features=self.feature_embed_layer_list[_].weight.shape[1])
-                 for _ in range(len(self.selected_features))])
+            else:
+                self.n_attributes[attribute] = 0
+        # if self.attribute_predictor == 'MLP':
+        #     self.ap = nn.Sequential(nn.Linear(in_features=self.hidden_size,
+        #                                                out_features=self.hidden_size),
+        #                                      nn.BatchNorm1d(num_features=self.hidden_size),
+        #                                      nn.ReLU(),
+        #                                      # final logits
+        #                                      nn.Linear(in_features=self.hidden_size,
+        #                                                out_features=self.n_attributes)
+        #                                      )
+
+        module_list = []
+
+        for i, _ in enumerate(self.selected_features):
+            if self.attribute_predictor[i] == 'linear':
+                module_list.append(
+                    copy.deepcopy(nn.Linear(in_features=self.hidden_size, out_features=self.n_attributes[_]))
+                )
+            elif self.attribute_predictor[i] == 'cos_sim':
+                module_list.append(
+                    nn.Linear(in_features=self.hidden_size, out_features=self.feature_embed_layer_list[i].weight.shape[1])
+                )
+            elif self.attribute_predictor[i] == '' or self.attribute_predictor[i] == 'not':
+                # awful
+                module_list.append(None)
+
+        self.ap = nn.ModuleList(module_list)
 
         self.LayerNorm = nn.LayerNorm(self.hidden_size, eps=self.layer_norm_eps)
         self.dropout = nn.Dropout(self.hidden_dropout_prob)
@@ -165,19 +192,20 @@ class SASRecD(SequentialRecommender):
         position_embedding = self.position_embedding(position_ids)
 
         feature_table = []
-        # for feature_embed_layer in self.feature_embed_layer_list:
-        #     sparse_embedding, dense_embedding = feature_embed_layer(None, item_seq)
-        #     sparse_embedding = sparse_embedding['item']
-        #     dense_embedding = dense_embedding['item']
-        #     # concat the sparse embedding and float embedding
-        #     if sparse_embedding is not None:
-        #         feature_table.append(sparse_embedding)
-        #     if dense_embedding is not None:
-        #         feature_table.append(dense_embedding)
 
-        for feature_embed_layer in self.feature_embed_layer_list:
-            static_embedding = feature_embed_layer(item_seq).unsqueeze(-2)
-            feature_table.append(static_embedding)
+        for i, feature_embed_layer in enumerate(self.feature_embed_layer_list):
+            if self.feature_type[i] == 'static':
+                static_embedding = feature_embed_layer(item_seq).unsqueeze(-2)
+                feature_table.append(static_embedding)
+            elif self.feature_type[i] == 'categorical':
+                sparse_embedding, dense_embedding = feature_embed_layer(None, item_seq)
+                sparse_embedding = sparse_embedding['item']
+                dense_embedding = dense_embedding['item']
+                # concat the sparse embedding and float embedding
+                if sparse_embedding is not None:
+                    feature_table.append(sparse_embedding)
+                if dense_embedding is not None:
+                    feature_table.append(dense_embedding)
 
         feature_emb = feature_table
         input_emb = item_emb
@@ -208,11 +236,14 @@ class SASRecD(SequentialRecommender):
             logits = torch.matmul(seq_output, test_item_emb.transpose(0, 1))
             loss = self.loss_fct(logits, pos_items)
 
-            if self.attribute_predictor == 'cos_sim':
-                loss_dic = {'item_loss': loss}
-                attribute_loss_sum = 0
+            loss_dic = {'item_loss': loss}
+            attribute_loss_sum = 0
 
-                for i, a_predictor in enumerate(self.ap):
+            for i, a_predictor in enumerate(self.ap):
+                if self.attribute_predictor[i] == '' or self.attribute_predictor[i] == 'not':
+                    continue
+
+                if self.attribute_predictor[i] == 'cos_sim':
                     true_emb = self.feature_embed_layer_list[i](pos_items)
 
                     pred_emb = a_predictor(seq_output)
@@ -226,16 +257,8 @@ class SASRecD(SequentialRecommender):
                     attribute_loss = (1 - cos_sim).mean()
 
                     loss_dic[self.selected_features[i]] = attribute_loss
-                    attribute_loss_sum += attribute_loss
 
-                total_loss = loss + self.lamdas[0] * attribute_loss_sum
-                loss_dic['total_loss'] = total_loss
-                return total_loss
-
-            elif self.attribute_predictor != '' and self.attribute_predictor != 'not':
-                loss_dic = {'item_loss': loss}
-                attribute_loss_sum = 0
-                for i, a_predictor in enumerate(self.ap):
+                elif self.attribute_predictor[i] == 'linear':
                     attribute_logits = a_predictor(seq_output)
                     attribute_labels = interaction.interaction[self.selected_features[i]]
                     attribute_labels = nn.functional.one_hot(attribute_labels, num_classes=self.n_attributes[
@@ -247,20 +270,13 @@ class SASRecD(SequentialRecommender):
                     attribute_loss = self.attribute_loss_fct(attribute_logits, attribute_labels)
                     attribute_loss = torch.mean(attribute_loss[:, 1:])
                     loss_dic[self.selected_features[i]] = attribute_loss
-                if self.num_feature_field == 1:
-                    total_loss = loss + self.lamdas[0] * attribute_loss
-                    # print('total_loss:{}\titem_loss:{}\tattribute_{}_loss:{}'.format(total_loss, loss,self.selected_features[0],attribute_loss))
-                else:
-                    for i, attribute in enumerate(self.selected_features):
-                        attribute_loss_sum += self.lamdas[i] * loss_dic[attribute]
-                    total_loss = loss + attribute_loss_sum
-                    loss_dic['total_loss'] = total_loss
-                    # s = ''
-                    # for key,value in loss_dic.items():
-                    #     s += '{}_{:.4f}\t'.format(key,value.item())
-                    # print(s)
-            else:
-                total_loss = loss
+
+            for i, attribute in enumerate(self.selected_features):
+                attribute_loss_sum += self.lamdas[i] * loss_dic[attribute]
+
+            total_loss = loss + attribute_loss_sum
+            loss_dic['total_loss'] = total_loss
+
             return total_loss
 
     def predict(self, interaction):

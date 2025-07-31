@@ -14,9 +14,9 @@ save_dataloaders: False
 additional_feat_suffix: [title]
 load_col:
     inter: [user_id, item_id, rating, timestamp]
-    item: ['item_id']
-    title: ['ent_id', 'ent_emb']
-alias_of_item_id: ['ent_id']
+    item: [item_id, categories]
+    title: [ent_id, ent_emb]
+alias_of_item_id: [ent_id]
 preload_weight:
     ent_id: ent_emb
 MAX_ITEM_LIST_LENGTH: 50
@@ -35,20 +35,21 @@ item_inter_num_interval: "[5,inf)"
 n_layers: 3
 n_heads: 8
 hidden_size: 256
-attribute_hidden_size: [128]
+attribute_hidden_size: [128, 128]
 inner_size: 256
 hidden_dropout_prob: 0.5
 attn_dropout_prob: 0.3
 hidden_act: 'gelu'
 layer_norm_eps: 1e-12
 initializer_range: 0.02
-selected_features: ['ent_emb']
+selected_features: ['ent_emb', 'categories']
+feature_type: ['static', 'categorical']
 pooling_mode: 'sum'
 loss_type: 'CE'
 weight_sharing: 'not'
 fusion_type: 'gate'
-lamdas: [5]
-attribute_predictor: 'cos_sim'
+lamdas: [5, 5]
+attribute_predictor: ['cos_sim', 'linear']
 
 # training settings
 epochs: 40
