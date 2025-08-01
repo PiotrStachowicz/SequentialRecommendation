@@ -10,6 +10,8 @@ SASRecF
 
 import torch
 from torch import nn
+import numpy as np
+import copy
 
 from recbole.model.abstract_recommender import SequentialRecommender
 from recbole.model.layers import TransformerEncoder, FeatureSeqEmbLayer
@@ -29,12 +31,14 @@ class SASRecF(SequentialRecommender):
         self.n_heads = config['n_heads']
         self.hidden_size = config['hidden_size']  # same as embedding_size
         self.inner_size = config['inner_size']  # the dimensionality in feed-forward layer
+        self.attribute_hidden_size = config['attribute_hidden_size']
         self.hidden_dropout_prob = config['hidden_dropout_prob']
         self.attn_dropout_prob = config['attn_dropout_prob']
         self.hidden_act = config['hidden_act']
         self.layer_norm_eps = config['layer_norm_eps']
 
         self.selected_features = config['selected_features']
+        self.feature_type = config['feature_type']
         self.pooling_mode = config['pooling_mode']
         self.device = config['device']
         self.num_feature_field = len(config['selected_features'])
@@ -45,9 +49,36 @@ class SASRecF(SequentialRecommender):
         # define layers and loss
         self.item_embedding = nn.Embedding(self.n_items, self.hidden_size, padding_idx=0)
         self.position_embedding = nn.Embedding(self.max_seq_length, self.hidden_size)
-        self.feature_embed_layer = FeatureSeqEmbLayer(
-            dataset, self.hidden_size, self.selected_features, self.pooling_mode, self.device
-        )
+
+        layer_list = []
+
+        for i, feature in enumerate(self.selected_features):
+            feature_type = self.feature_type[i]
+
+            if feature_type == 'static':
+                layer_list.append(
+                    nn.Embedding.from_pretrained(
+                        torch.from_numpy(
+                            dataset.get_preload_weight(
+                                list(dataset.config['preload_weight'].keys())[i]
+                            ).astype(np.float32)
+                        )
+                    )
+                )
+            elif feature_type == 'categorical':
+                layer_list.append(
+                    copy.deepcopy(
+                        FeatureSeqEmbLayer(
+                            dataset,
+                            self.attribute_hidden_size[i],
+                            [self.selected_features[i]],
+                            self.pooling_mode,
+                            self.device
+                        )
+                    )
+                )
+
+        self.feature_embed_layer_list = nn.ModuleList(layer_list)
 
         self.trm_encoder = TransformerEncoder(
             n_layers=self.n_layers,
@@ -60,7 +91,7 @@ class SASRecF(SequentialRecommender):
             layer_norm_eps=self.layer_norm_eps
         )
 
-        self.concat_layer = nn.Linear(self.hidden_size * (1 + self.num_feature_field), self.hidden_size)
+        self.concat_layer = nn.Linear(self.hidden_size * self.num_feature_field, self.hidden_size)
 
         self.LayerNorm = nn.LayerNorm(self.hidden_size, eps=self.layer_norm_eps)
         self.dropout = nn.Dropout(self.hidden_dropout_prob)
@@ -78,6 +109,10 @@ class SASRecF(SequentialRecommender):
 
     def _init_weights(self, module):
         """ Initialize the weights """
+        for entry in self.feature_embed_layer_list:
+            if module is entry:
+                return
+
         if isinstance(module, (nn.Linear, nn.Embedding)):
             # Slightly different from the TF version which uses truncated_normal for initialization
             # cf https://github.com/pytorch/pytorch/pull/5617
@@ -111,15 +146,21 @@ class SASRecF(SequentialRecommender):
         position_ids = position_ids.unsqueeze(0).expand_as(item_seq)
         position_embedding = self.position_embedding(position_ids)
 
-        sparse_embedding, dense_embedding = self.feature_embed_layer(None, item_seq)
-        sparse_embedding = sparse_embedding['item']
-        dense_embedding = dense_embedding['item']
-        # concat the sparse embedding and float embedding
         feature_table = []
-        if sparse_embedding is not None:
-            feature_table.append(sparse_embedding)
-        if dense_embedding is not None:
-            feature_table.append(dense_embedding)
+
+        for i, feature_embed_layer in enumerate(self.feature_embed_layer_list):
+            if self.feature_type[i] == 'static':
+                static_embedding = feature_embed_layer(item_seq).unsqueeze(-2)
+                feature_table.append(static_embedding)
+            elif self.feature_type[i] == 'categorical':
+                sparse_embedding, dense_embedding = feature_embed_layer(None, item_seq)
+                sparse_embedding = sparse_embedding['item']
+                dense_embedding = dense_embedding['item']
+                # concat the sparse embedding and float embedding
+                if sparse_embedding is not None:
+                    feature_table.append(sparse_embedding)
+                if dense_embedding is not None:
+                    feature_table.append(dense_embedding)
 
         feature_table = torch.cat(feature_table, dim=-2)
         table_shape = feature_table.shape
