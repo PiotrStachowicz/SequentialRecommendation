@@ -272,6 +272,8 @@ class SASRecD(SequentialRecommender):
                     loss_dic[self.selected_features[i]] = attribute_loss
 
             for i, attribute in enumerate(self.selected_features):
+                if self.attribute_predictor[i] == '' or self.attribute_predictor[i] == 'not':
+                    continue
                 attribute_loss_sum += self.lamdas[i] * loss_dic[attribute]
 
             total_loss = loss + attribute_loss_sum
