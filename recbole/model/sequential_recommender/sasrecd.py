@@ -94,6 +94,9 @@ class SASRecD(SequentialRecommender):
 
         self.feature_embed_layer_list = nn.ModuleList(layer_list)
 
+        self.global_step = 0
+        self.anneal_T = 10000
+
         self.trm_encoder = DIFTransformerEncoder(
             n_layers=self.n_layers,
             n_heads=self.n_heads,
@@ -156,6 +159,12 @@ class SASRecD(SequentialRecommender):
         self.apply(self._init_weights)
         self.other_parameter_name = ['feature_embed_layer_list']
 
+    def anneal_lambda(self, lam_max):
+        """Sigmoid annealing from ~0 to lam_max over anneal_T steps."""
+        t = self.global_step
+        # sigmoid in [0,1]
+        factor = 1 / (1 + torch.exp(torch.tensor(-10 * (t / self.anneal_T - 0.5))))
+        return lam_max * factor.item()
 
     def _init_weights(self, module):
         """ Initialize the weights """
@@ -223,6 +232,8 @@ class SASRecD(SequentialRecommender):
         return seq_output
 
     def calculate_loss(self, interaction):
+        self.global_step += 1
+
         item_seq = interaction[self.ITEM_SEQ]
         item_seq_len = interaction[self.ITEM_SEQ_LEN]
         seq_output = self.forward(item_seq, item_seq_len)
@@ -278,7 +289,8 @@ class SASRecD(SequentialRecommender):
             for i, attribute in enumerate(self.selected_features):
                 if self.attribute_predictor[i] == '' or self.attribute_predictor[i] == 'not':
                     continue
-                attribute_loss_sum += self.lamdas[i] * loss_dic[attribute]
+                lam = self.anneal_lambda(self.lamdas[i])
+                attribute_loss_sum += lam * loss_dic[attribute]
 
             total_loss = loss + attribute_loss_sum
             loss_dic['total_loss'] = total_loss
