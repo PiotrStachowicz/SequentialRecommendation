@@ -43,6 +43,11 @@ class SASRecD(SequentialRecommender):
         self.layer_norm_eps = config['layer_norm_eps']
 
         self.selected_features = config['selected_features']
+
+        # Header
+        with open('./recbole/data/dataset/data_analysis/test_categories_loss_2014.csv', 'a') as f:
+            f.write('\t'.join(list(self.selected_features) + ['item_loss']) + '\n')
+
         self.feature_type = config['feature_type']
         self.pooling_mode = config['pooling_mode']
         self.device = config['device']
@@ -132,7 +137,6 @@ class SASRecD(SequentialRecommender):
                     nn.Linear(in_features=self.hidden_size, out_features=self.feature_embed_layer_list[i].weight.shape[1])
                 )
             elif self.attribute_predictor[i] == '' or self.attribute_predictor[i] == 'not':
-                # awful
                 module_list.append(None)
 
         self.ap = nn.ModuleList(module_list)
@@ -278,6 +282,14 @@ class SASRecD(SequentialRecommender):
 
             total_loss = loss + attribute_loss_sum
             loss_dic['total_loss'] = total_loss
+
+            with open('./recbole/data/dataset/data_analysis/test_categories_loss_2014.csv', 'a') as f:
+                f.write(
+                    '\t'.join(
+                        [str(loss_dic[feature].item()) for feature in self.selected_features]
+                        + [str(loss_dic['item_loss'].item())]
+                    ) + '\n'
+                )
 
             return total_loss
 
