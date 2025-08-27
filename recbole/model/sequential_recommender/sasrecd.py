@@ -43,11 +43,6 @@ class SASRecD(SequentialRecommender):
         self.layer_norm_eps = config['layer_norm_eps']
 
         self.selected_features = config['selected_features']
-
-        # Header
-        with open('./recbole/data/dataset/data_analysis/test_categories_loss_2014.csv', 'a') as f:
-            f.write('\t'.join(list(self.selected_features) + ['item_loss']) + '\n')
-
         self.feature_type = config['feature_type']
         self.pooling_mode = config['pooling_mode']
         self.device = config['device']
@@ -59,6 +54,12 @@ class SASRecD(SequentialRecommender):
 
         self.lamdas = config['lamdas']
         self.attribute_predictor = config['attribute_predictor']
+
+        # Header
+        with open('./recbole/data/dataset/data_analysis/test_loss_2014.csv', 'a') as f:
+            f.write('\t'.join(
+                [entry for i, entry in enumerate(self.selected_features) if self.attribute_predictor[i] != 'not'] + [
+                    'item_loss', 'total_loss']) + '\n')
 
         # define layers and loss
         self.item_embedding = nn.Embedding(self.n_items, self.hidden_size, padding_idx=0)
@@ -295,11 +296,10 @@ class SASRecD(SequentialRecommender):
             total_loss = loss + attribute_loss_sum
             loss_dic['total_loss'] = total_loss
 
-            with open('./recbole/data/dataset/data_analysis/test_categories_loss_2014.csv', 'a') as f:
+            with open('./recbole/data/dataset/data_analysis/test_loss_2014.csv', 'a') as f:
                 f.write(
                     '\t'.join(
-                        [str(loss_dic[feature].item()) for feature in self.selected_features]
-                        + [str(loss_dic['item_loss'].item())]
+                        [str(loss_dic[feature].item()) for feature in loss_dic.keys()]
                     ) + '\n'
                 )
 
