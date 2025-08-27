@@ -56,9 +56,9 @@ class SASRecD(SequentialRecommender):
         self.attribute_predictor = config['attribute_predictor']
 
         # Header
-        with open('./recbole/data/dataset/data_analysis/test_loss_2014.csv', 'a') as f:
+        with open('./recbole/data/dataset/data_analysis/test_2loss_2014.csv', 'a') as f:
             f.write('\t'.join(
-                [entry for i, entry in enumerate(self.selected_features) if self.attribute_predictor[i] != 'not'] + [
+                [entry for i, entry in enumerate(self.selected_features) if self.attribute_predictor[i] != 'not' or self.attribute_predictor[i] != ''] + [
                     'item_loss', 'total_loss']) + '\n')
 
         # define layers and loss
@@ -293,10 +293,15 @@ class SASRecD(SequentialRecommender):
                 lam = self.anneal_lambda(self.lamdas[i])
                 attribute_loss_sum += lam * loss_dic[attribute]
 
-            total_loss = loss + attribute_loss_sum
+            features = sum([1 for ap in self.attribute_predictor if ap != '' and ap != 'not'])\
+
+            total_loss = loss
+            if features > 0:
+                total_loss += (attribute_loss_sum / features)
+
             loss_dic['total_loss'] = total_loss
 
-            with open('./recbole/data/dataset/data_analysis/test_loss_2014.csv', 'a') as f:
+            with open('./recbole/data/dataset/data_analysis/test_2loss_2014.csv', 'a') as f:
                 f.write(
                     '\t'.join(
                         [str(loss_dic[feature].item()) for feature in loss_dic.keys()]
