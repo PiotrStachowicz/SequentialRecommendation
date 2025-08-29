@@ -56,10 +56,10 @@ class SASRecD(SequentialRecommender):
         self.attribute_predictor = config['attribute_predictor']
 
         # Header
-        with open('./recbole/data/dataset/data_analysis/test_2loss_2014.csv', 'a') as f:
+        with open('./recbole/data/dataset/data_analysis/embeddings/test_categories_loss_2014.csv', 'a') as f:
             f.write('\t'.join(
-                [entry for i, entry in enumerate(self.selected_features) if self.attribute_predictor[i] != 'not' or self.attribute_predictor[i] != ''] + [
-                    'item_loss', 'total_loss']) + '\n')
+                ['item_loss'] + [entry for i, entry in enumerate(self.selected_features) if self.attribute_predictor[i] != 'not' and self.attribute_predictor[i] != ''] + [
+                    'total_loss', 'attribute_loss_sum']) + '\n')
 
         # define layers and loss
         self.item_embedding = nn.Embedding(self.n_items, self.hidden_size, padding_idx=0)
@@ -96,7 +96,8 @@ class SASRecD(SequentialRecommender):
         self.feature_embed_layer_list = nn.ModuleList(layer_list)
 
         self.global_step = 0
-        self.anneal_T = 10000
+        self.anneal_T = 5000
+        self.B = 5
 
         self.trm_encoder = DIFTransformerEncoder(
             n_layers=self.n_layers,
@@ -161,10 +162,10 @@ class SASRecD(SequentialRecommender):
         self.other_parameter_name = ['feature_embed_layer_list']
 
     def anneal_lambda(self, lam_max):
-        """Sigmoid annealing from ~0 to lam_max over anneal_T steps."""
+        """Annealing"""
         t = self.global_step
         # sigmoid in [0,1]
-        factor = 1 / (1 + torch.exp(torch.tensor(-10 * (t / self.anneal_T - 0.5))))
+        factor = 1 / (1 + torch.exp(torch.tensor(self.B * (t / self.anneal_T - 0.5))))
         return lam_max * factor.item()
 
     def _init_weights(self, module):
@@ -291,9 +292,10 @@ class SASRecD(SequentialRecommender):
                 if self.attribute_predictor[i] == '' or self.attribute_predictor[i] == 'not':
                     continue
                 lam = self.anneal_lambda(self.lamdas[i])
+
                 attribute_loss_sum += lam * loss_dic[attribute]
 
-            features = sum([1 for ap in self.attribute_predictor if ap != '' and ap != 'not'])\
+            features = sum([1 for ap in self.attribute_predictor if ap != '' and ap != 'not'])
 
             total_loss = loss
             if features > 0:
@@ -301,10 +303,10 @@ class SASRecD(SequentialRecommender):
 
             loss_dic['total_loss'] = total_loss
 
-            with open('./recbole/data/dataset/data_analysis/test_2loss_2014.csv', 'a') as f:
+            with open('./recbole/data/dataset/data_analysis/embeddings/test_categories_loss_2014.csv', 'a') as f:
                 f.write(
                     '\t'.join(
-                        [str(loss_dic[feature].item()) for feature in loss_dic.keys()]
+                        [str(loss_dic[feature].item()) for feature in loss_dic.keys()] + [str(attribute_loss_sum.item() / (features if features != 0 else 1))]
                     ) + '\n'
                 )
 
