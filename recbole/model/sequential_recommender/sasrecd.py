@@ -56,7 +56,7 @@ class SASRecD(SequentialRecommender):
         self.attribute_predictor = config['attribute_predictor']
 
         # Header
-        with open('./recbole/data/dataset/data_analysis/embeddings/test_categories_loss_2014.csv', 'a') as f:
+        with open('./recbole/data/dataset/data_analysis/embeddings/test.csv', 'a') as f:
             f.write('\t'.join(
                 ['item_loss'] + [entry for i, entry in enumerate(self.selected_features) if self.attribute_predictor[i] != 'not' and self.attribute_predictor[i] != ''] + [
                     'total_loss', 'attribute_loss_sum']) + '\n')
@@ -303,10 +303,10 @@ class SASRecD(SequentialRecommender):
 
             loss_dic['total_loss'] = total_loss
 
-            with open('./recbole/data/dataset/data_analysis/embeddings/test_categories_loss_2014.csv', 'a') as f:
+            with open('./recbole/data/dataset/data_analysis/embeddings/test.csv', 'a') as f:
                 f.write(
                     '\t'.join(
-                        [str(loss_dic[feature].item()) for feature in loss_dic.keys()] + [str(attribute_loss_sum.item() / (features if features != 0 else 1))]
+                        [str(loss_dic[feature].item()) for feature in loss_dic.keys()] + [(str(attribute_loss_sum.item() / features) if features != 0 else "0")]
                     ) + '\n'
                 )
 
