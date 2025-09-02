@@ -4,7 +4,7 @@
 # @Email   : hui.wang@ruc.edu.cn
 
 r"""
-SASRecF
+NOVA based on SASRecF
 ################################################
 """
 
