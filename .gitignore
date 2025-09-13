@@ -16,3 +16,4 @@ myenv
 saved
 *.pth
 swap
+*.keys
