@@ -13,6 +13,7 @@ Reference:
 
 import torch
 import numpy as np
+from tensorflow.python.keras.backend import print_tensor
 from torch import nn
 
 
@@ -240,6 +241,7 @@ class SASRecD(SequentialRecommender):
         item_seq_len = interaction[self.ITEM_SEQ_LEN]
         seq_output = self.forward(item_seq, item_seq_len)
         pos_items = interaction[self.POS_ITEM_ID]
+
         if self.loss_type == 'BPR':
             neg_items = interaction[self.NEG_ITEM_ID]
             pos_items_emb = self.item_embedding(pos_items)
@@ -320,6 +322,37 @@ class SASRecD(SequentialRecommender):
         test_item_emb = self.item_embedding(test_item)
         scores = torch.mul(seq_output, test_item_emb).sum(dim=1)
         return scores
+
+    def predict_side_task(self, interaction):
+        item_seq = interaction[self.ITEM_SEQ]
+        item_seq_len = interaction[self.ITEM_SEQ_LEN]
+
+        seq_output = self.forward(item_seq, item_seq_len)
+
+        test_items_emb = self.item_embedding.weight
+        scores = torch.matmul(seq_output, test_items_emb.transpose(0, 1))
+
+        idx = torch.argmax(scores, dim=1)
+
+        loss = dict()
+
+        for i, ap in enumerate(self.ap):
+            if self.attribute_predictor[i] == '' or self.attribute_predictor[i] == 'not':
+                continue
+
+            if self.attribute_predictor[i] == 'cos_sim':
+                true_emb = self.feature_embed_layer_list[i](idx)
+                pred_emb = self.ap(seq_output)
+
+                # Normalize embeddings to unit vectors
+                pred_emb_norm = torch.nn.functional.normalize(pred_emb, p=2, dim=-1)
+                true_emb_norm = torch.nn.functional.normalize(true_emb, p=2, dim=-1)
+
+                # Compute cosine similarity
+                cos_sim = (pred_emb_norm * true_emb_norm).sum(dim=-1)
+                loss[self.selected_features[i]] = (1 - cos_sim).mean()
+
+        return loss
 
     def full_sort_predict(self, interaction):
         item_seq = interaction[self.ITEM_SEQ]
