@@ -19,7 +19,7 @@ if OPUS:
     os.environ["TRANSFORMERS_CACHE"] = custom_cache
     os.environ["HF_DATASETS_CACHE"] = custom_cache
     os.environ["HF_HUB_CACHE"] = custom_cache
-os.environ["HF_HUB_TOKEN"] = open('./HUB_TOKEN.keys', 'r').read()
+os.environ["HF_HUB_TOKEN"] = open('./HUGGING_FACE_KEY.keys', 'r').read()
 
 DATASET = 'Amazon_Sports_and_Outdoors'
 
