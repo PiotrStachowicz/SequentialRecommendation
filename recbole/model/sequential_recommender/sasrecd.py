@@ -55,6 +55,7 @@ class SASRecD(SequentialRecommender):
 
         self.lamdas = config['lamdas']
         self.attribute_predictor = config['attribute_predictor']
+        self.annealing = config['annealing']
 
         # Header
         with open('./recbole/data/dataset/data_analysis/embeddings/test.csv', 'a') as f:
@@ -293,7 +294,7 @@ class SASRecD(SequentialRecommender):
             for i, attribute in enumerate(self.selected_features):
                 if self.attribute_predictor[i] == '' or self.attribute_predictor[i] == 'not':
                     continue
-                lam = self.anneal_lambda(self.lamdas[i])
+                lam = self.anneal_lambda(self.lamdas[i]) if self.annealing else self.lamdas[i]
 
                 attribute_loss_sum += lam * loss_dic[attribute]
 

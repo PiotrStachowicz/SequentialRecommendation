@@ -13,7 +13,7 @@ save_dataloaders: False
 # dataset
 load_col:
     inter: [user_id, item_id, rating, timestamp]
-    item: [item_id, categories]
+    item: ['item_id','title','sales_rank','price','brand','categories','sales_type']
 MAX_ITEM_LIST_LENGTH: 50
 USER_ID_FIELD: user_id
 ITEM_ID_FIELD: item_id
@@ -47,15 +47,16 @@ lamdas: [5]
 attribute_predictor: ['linear']
 
 # training settings
-epochs: 40
-train_batch_size: 1024
+epochs: 200
+train_batch_size: 2048
 learner: adam
 learning_rate: 0.0001
 eval_step: 2
 stopping_step: 10
 clip_grad_norm: ~
-weight_decay: 0.0001
+weight_decay: 0.0
 neg_sampling:
+annealing: False
 
 # evaluation settings
 eval_args:
