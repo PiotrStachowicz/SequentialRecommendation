@@ -58,10 +58,10 @@ class SASRecD(SequentialRecommender):
         self.annealing = config['annealing']
 
         # Header
-        with open('./recbole/data/dataset/data_analysis/embeddings/test.csv', 'a') as f:
-            f.write('\t'.join(
-                ['item_loss'] + [entry for i, entry in enumerate(self.selected_features) if self.attribute_predictor[i] != 'not' and self.attribute_predictor[i] != ''] + [
-                    'total_loss', 'attribute_loss_sum']) + '\n')
+        #with open('./recbole/data/dataset/data_analysis/embeddings/test.csv', 'a') as f:
+        #    f.write('\t'.join(
+        #        ['item_loss'] + [entry for i, entry in enumerate(self.selected_features) if self.attribute_predictor[i] != 'not' and self.attribute_predictor[i] != ''] + [
+        #            'total_loss', 'attribute_loss_sum']) + '\n')
 
         # define layers and loss
         self.item_embedding = nn.Embedding(self.n_items, self.hidden_size, padding_idx=0)
@@ -306,12 +306,12 @@ class SASRecD(SequentialRecommender):
 
             loss_dic['total_loss'] = total_loss
 
-            with open('./recbole/data/dataset/data_analysis/embeddings/test.csv', 'a') as f:
-                f.write(
-                    '\t'.join(
-                        [str(loss_dic[feature].item()) for feature in loss_dic.keys()] + [(str(attribute_loss_sum.item() / features) if features != 0 else "0")]
-                    ) + '\n'
-                )
+            #with open('./recbole/data/dataset/data_analysis/embeddings/test.csv', 'a') as f:
+            #    f.write(
+            #        '\t'.join(
+            #            [str(loss_dic[feature].item()) for feature in loss_dic.keys()] + [(str(attribute_loss_sum.item() / features) if features != 0 else "0")]
+            #        ) + '\n'
+            #    )
 
             return total_loss
 
