@@ -343,7 +343,7 @@ class SASRecD(SequentialRecommender):
 
             if self.attribute_predictor[i] == 'cos_sim':
                 true_emb = self.feature_embed_layer_list[i](idx)
-                pred_emb = self.ap(seq_output)
+                pred_emb = ap(seq_output)
 
                 # Normalize embeddings to unit vectors
                 pred_emb_norm = torch.nn.functional.normalize(pred_emb, p=2, dim=-1)

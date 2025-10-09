@@ -10,10 +10,12 @@ myenv
 *log*
 *.ent
 *.jpg
-*.image
-*.image2
-*.title
+*.image*
+*.title*
 saved
 *.pth
 swap
 *.keys
+*.zero
+*.b
+*swap/
