@@ -71,13 +71,13 @@ class SASRecD(SequentialRecommender):
 
         for i, feature in enumerate(self.selected_features):
             feature_type = self.feature_type[i]
-
+            
             if feature_type == 'static':
                 layer_list.append(
                     nn.Embedding.from_pretrained(
                         torch.from_numpy(
                             dataset.get_preload_weight(
-                                list(dataset.config['preload_weight'].keys())[i]
+                                f"{feature.split('_')[0]}_id"
                             ).astype(np.float32)
                         )
                     )

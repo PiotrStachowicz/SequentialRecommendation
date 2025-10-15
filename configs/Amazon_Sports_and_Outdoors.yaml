@@ -11,16 +11,9 @@ save_dataset: False
 save_dataloaders: False
 
 # dataset
-additional_feat_suffix: [title, image]
 load_col:
     inter: [user_id, item_id, rating, timestamp]
     item: ['item_id','title','sales_rank','price','brand','categories','sales_type']
-    title: ['ent_id', 'ent_emb']
-    image: ['img_id', 'img_emb']
-alias_of_item_id: ['ent_id', 'img_id']
-preload_weight:
-    ent_id: ent_emb
-    img_id: img_emb
 MAX_ITEM_LIST_LENGTH: 50
 USER_ID_FIELD: user_id
 ITEM_ID_FIELD: item_id
@@ -37,21 +30,21 @@ item_inter_num_interval: "[5,inf)"
 n_layers: 3
 n_heads: 8
 hidden_size: 256
-attribute_hidden_size: [128, 128, 64]
+attribute_hidden_size: [64]
 inner_size: 256
 hidden_dropout_prob: 0.5
 attn_dropout_prob: 0.3
 hidden_act: 'gelu'
 layer_norm_eps: 1e-12
 initializer_range: 0.02
-selected_features: ['ent_emb', 'img_emb', 'categories']
-feature_type: ['static', 'static', 'categorical']
+selected_features: ['categories']
+feature_type: ['categorical']
 pooling_mode: 'sum'
 loss_type: 'CE'
 weight_sharing: 'not'
 fusion_type: 'gate'
-lamdas: [5, 5, 5]
-attribute_predictor: ['cos_sim', 'cos_sim', 'linear']
+lamdas: [5]
+attribute_predictor: ['linear']
 
 # training settings
 epochs: 200
@@ -63,7 +56,7 @@ stopping_step: 10
 clip_grad_norm: ~
 weight_decay: 0.0
 neg_sampling:
-annealing: True
+annealing: False
 
 # evaluation settings
 eval_args:
@@ -75,7 +68,7 @@ eval_args:
 repeatable: True
 metrics: ["Recall","NDCG"]
 topk: [3,5,10,20]
-valid_metric: Recall@20
+valid_metric: Recall@10
 valid_metric_bigger: True
 eval_batch_size: 256
 loss_decimal_place: 4
