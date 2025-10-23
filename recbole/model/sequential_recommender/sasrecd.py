@@ -277,6 +277,36 @@ class SASRecD(SequentialRecommender):
                     attribute_loss = (1 - cos_sim).mean()
 
                     loss_dic[self.selected_features[i]] = attribute_loss
+                    # true_emb = self.feature_embed_layer_list[i](pos_items)
+
+                    # pred_emb = a_predictor(seq_output)
+
+                    # test_item_emb = self.feature_embed_layer_list[i].weight
+                    # logits = torch.matmul(pred_emb, test_item_emb.transpose(0, 1))
+
+                    # ground_truth = nn.functional.one_hot(pos_items, num_classes=test_item_emb.shape[0])
+
+                    # ground_truth = ground_truth.float()
+
+                    # attribute_loss = self.attribute_loss_fct(logits, ground_truth)
+
+                    # attribute_loss = torch.mean(attribute_loss[:, 1:])
+                    # loss_dic[self.selected_features[i]] = attribute_loss
+
+                # elif self.attribute_predictor[i] == 'CE':
+                #     true_emb = self.feature_embed_layer_list[i](pos_items)
+
+                #     pred_emb = a_predictor(seq_output)
+
+                #     test_item_emb = self.item_embedding.weight
+                #     logits = torch.matmul(pred_emb, test_item_emb.transpose(0, 1))
+
+                #     ground_truth = nn.functional.one_hot(pos_items, num_classes=test_item_emb.shape[0])
+
+                #     attribute_loss = self.attribute_loss_fct(logits, ground_truth)
+
+                #     attribute_loss = torch.mean(attribute_loss[:, 1:])
+                #     loss_dic[self.selected_features[i]] = attribute_loss
 
                 elif self.attribute_predictor[i] == 'linear':
                     attribute_logits = a_predictor(seq_output)

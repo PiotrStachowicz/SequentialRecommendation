@@ -7,9 +7,9 @@
 myenv
 *__pycache__
 *.parquet
-*log*
 *.ent
 *.jpg
+*log_tensorboard*
 *.image*
 *.title*
 saved

@@ -1,0 +1,350 @@
+Tue 14 Oct 2025 22:54:50 INFO  
+General Hyper Parameters:
+gpu_id = 0
+use_gpu = True
+seed = 212
+state = INFO
+reproducibility = True
+data_path = ./recbole/data/dataset/Amazon_Sports_and_Outdoors
+show_progress = True
+save_dataset = False
+save_dataloaders = False
+benchmark_filename = None
+
+Training Hyper Parameters:
+checkpoint_dir = saved
+epochs = 200
+train_batch_size = 1024
+learner = adam
+learning_rate = 0.0001
+eval_step = 2
+stopping_step = 10
+clip_grad_norm = None
+weight_decay = 0.0
+loss_decimal_place = 4
+
+Evaluation Hyper Parameters:
+eval_args = {'split': {'LS': 'valid_and_test'}, 'group_by': 'user', 'order': 'TO', 'mode': 'full'}
+metrics = ['Recall', 'NDCG']
+topk = [3, 5, 10, 20]
+valid_metric = Recall@10
+valid_metric_bigger = True
+eval_batch_size = 256
+metric_decimal_place = 4
+
+Dataset Hyper Parameters:
+field_separator = 	
+seq_separator =  
+USER_ID_FIELD = user_id
+ITEM_ID_FIELD = item_id
+RATING_FIELD = rating
+TIME_FIELD = timestamp
+seq_len = None
+LABEL_FIELD = label
+threshold = None
+NEG_PREFIX = neg_
+load_col = {'inter': ['user_id', 'item_id', 'rating', 'timestamp'], 'item': ['item_id', 'title', 'sales_rank', 'price', 'brand', 'categories', 'sales_type'], 'title': ['ent_id', 'ent_emb']}
+unload_col = None
+unused_col = None
+additional_feat_suffix = ['title']
+rm_dup_inter = None
+val_interval = None
+filter_inter_by_user_or_item = True
+user_inter_num_interval = [5,inf)
+item_inter_num_interval = [5,inf)
+alias_of_user_id = None
+alias_of_item_id = ['ent_id']
+alias_of_entity_id = None
+alias_of_relation_id = None
+preload_weight = {'ent_id': 'ent_emb'}
+normalize_field = None
+normalize_all = None
+ITEM_LIST_LENGTH_FIELD = item_length
+LIST_SUFFIX = _list
+MAX_ITEM_LIST_LENGTH = 50
+POSITION_FIELD = position_id
+HEAD_ENTITY_ID_FIELD = head_id
+TAIL_ENTITY_ID_FIELD = tail_id
+RELATION_ID_FIELD = relation_id
+ENTITY_ID_FIELD = entity_id
+
+Other Hyper Parameters: 
+neg_sampling = None
+multi_gpus = False
+repeatable = True
+n_layers = 3
+n_heads = 8
+hidden_size = 256
+attribute_hidden_size = [128]
+inner_size = 256
+hidden_dropout_prob = 0.5
+attn_dropout_prob = 0.3
+hidden_act = gelu
+layer_norm_eps = 1e-12
+initializer_range = 0.02
+selected_features = ['ent_emb']
+pooling_mode = sum
+loss_type = CE
+weight_sharing = not
+fusion_type = gate
+lamdas = [5]
+attribute_predictor = ['cos_sim']
+MODEL_TYPE = ModelType.SEQUENTIAL
+feature_type = ['static']
+annealing = False
+MODEL_INPUT_TYPE = InputType.POINTWISE
+eval_type = EvaluatorType.RANKING
+device = cuda
+train_neg_sample_args = {'strategy': 'none'}
+eval_neg_sample_args = {'strategy': 'full', 'distribution': 'uniform'}
+
+
+Tue 14 Oct 2025 22:54:51 INFO  Amazon_Sports_and_Outdoors
+The number of users: 35599
+Average actions of users: 8.324540704533963
+The number of items: 18358
+Average actions of items: 16.142997221768262
+The number of inters: 296337
+The sparsity of the dataset: 99.95465569853714%
+Remain Fields: ['user_id', 'item_id', 'rating', 'timestamp', 'title', 'price', 'brand', 'categories', 'sales_type', 'sales_rank', 'ent_id', 'ent_emb']
+Tue 14 Oct 2025 22:54:52 INFO  [Training]: train_batch_size = [1024] negative sampling: [None]
+Tue 14 Oct 2025 22:54:52 INFO  [Evaluation]: eval_batch_size = [256] eval_args: [{'split': {'LS': 'valid_and_test'}, 'group_by': 'user', 'order': 'TO', 'mode': 'full'}]
+Tue 14 Oct 2025 22:54:53 INFO  SASRecD(
+  (item_embedding): Embedding(18358, 256, padding_idx=0)
+  (position_embedding): Embedding(50, 256)
+  (feature_embed_layer_list): ModuleList(
+    (0): Embedding(18358, 128)
+  )
+  (trm_encoder): DIFTransformerEncoder(
+    (layer): ModuleList(
+      (0-2): 3 x DIFTransformerLayer(
+        (multi_head_attention): DIFMultiHeadAttention(
+          (query): Linear(in_features=256, out_features=256, bias=True)
+          (key): Linear(in_features=256, out_features=256, bias=True)
+          (value): Linear(in_features=256, out_features=256, bias=True)
+          (query_p): Linear(in_features=256, out_features=256, bias=True)
+          (key_p): Linear(in_features=256, out_features=256, bias=True)
+          (query_layers): ModuleList(
+            (0): Linear(in_features=128, out_features=128, bias=True)
+          )
+          (key_layers): ModuleList(
+            (0): Linear(in_features=128, out_features=128, bias=True)
+          )
+          (fusion_layer): VanillaAttention(
+            (projection): Sequential(
+              (0): Linear(in_features=50, out_features=50, bias=True)
+              (1): ReLU(inplace=True)
+              (2): Linear(in_features=50, out_features=1, bias=True)
+            )
+          )
+          (attn_dropout): Dropout(p=0.3, inplace=False)
+          (dense): Linear(in_features=256, out_features=256, bias=True)
+          (LayerNorm): LayerNorm((256,), eps=1e-12, elementwise_affine=True)
+          (out_dropout): Dropout(p=0.5, inplace=False)
+        )
+        (feed_forward): FeedForward(
+          (dense_1): Linear(in_features=256, out_features=256, bias=True)
+          (dense_2): Linear(in_features=256, out_features=256, bias=True)
+          (LayerNorm): LayerNorm((256,), eps=1e-12, elementwise_affine=True)
+          (dropout): Dropout(p=0.5, inplace=False)
+        )
+      )
+    )
+  )
+  (ap): ModuleList(
+    (0): Linear(in_features=256, out_features=128, bias=True)
+  )
+  (LayerNorm): LayerNorm((256,), eps=1e-12, elementwise_affine=True)
+  (dropout): Dropout(p=0.5, inplace=False)
+  (loss_fct): CrossEntropyLoss()
+  (attribute_loss_fct): BCEWithLogitsLoss()
+)
+Trainable parameters: 6434811
+Tue 14 Oct 2025 22:55:21 INFO  epoch 0 training [time: 27.79s, train loss: 2089.3454]
+Tue 14 Oct 2025 22:55:46 INFO  epoch 1 training [time: 25.53s, train loss: 1905.8691]
+Tue 14 Oct 2025 22:55:48 INFO  epoch 1 evaluating [time: 1.96s, valid_score: 0.012500]
+Tue 14 Oct 2025 22:55:48 INFO  valid result: 
+recall@3 : 0.006    recall@5 : 0.0081    recall@10 : 0.0125    recall@20 : 0.0235    ndcg@3 : 0.0044    ndcg@5 : 0.0052    ndcg@10 : 0.0066    ndcg@20 : 0.0094    
+Tue 14 Oct 2025 22:55:49 INFO  Saving current best: saved/SASRecD-Oct-14-2025_22-54-53.pth
+Tue 14 Oct 2025 22:56:14 INFO  epoch 2 training [time: 25.48s, train loss: 1893.5270]
+Tue 14 Oct 2025 22:56:40 INFO  epoch 3 training [time: 25.65s, train loss: 1888.2953]
+Tue 14 Oct 2025 22:56:41 INFO  epoch 3 evaluating [time: 1.82s, valid_score: 0.012200]
+Tue 14 Oct 2025 22:56:41 INFO  valid result: 
+recall@3 : 0.0059    recall@5 : 0.0078    recall@10 : 0.0122    recall@20 : 0.0233    ndcg@3 : 0.0044    ndcg@5 : 0.0051    ndcg@10 : 0.0066    ndcg@20 : 0.0093    
+Tue 14 Oct 2025 22:57:07 INFO  epoch 4 training [time: 25.62s, train loss: 1881.4189]
+Tue 14 Oct 2025 22:57:33 INFO  epoch 5 training [time: 25.58s, train loss: 1868.3949]
+Tue 14 Oct 2025 22:57:35 INFO  epoch 5 evaluating [time: 1.94s, valid_score: 0.015900]
+Tue 14 Oct 2025 22:57:35 INFO  valid result: 
+recall@3 : 0.0061    recall@5 : 0.0091    recall@10 : 0.0159    recall@20 : 0.0295    ndcg@3 : 0.0044    ndcg@5 : 0.0057    ndcg@10 : 0.0078    ndcg@20 : 0.0112    
+Tue 14 Oct 2025 22:57:35 INFO  Saving current best: saved/SASRecD-Oct-14-2025_22-54-53.pth
+Tue 14 Oct 2025 22:58:00 INFO  epoch 6 training [time: 25.59s, train loss: 1836.1411]
+Tue 14 Oct 2025 22:58:26 INFO  epoch 7 training [time: 25.64s, train loss: 1806.8237]
+Tue 14 Oct 2025 22:58:28 INFO  epoch 7 evaluating [time: 1.84s, valid_score: 0.021800]
+Tue 14 Oct 2025 22:58:28 INFO  valid result: 
+recall@3 : 0.008    recall@5 : 0.0122    recall@10 : 0.0218    recall@20 : 0.0381    ndcg@3 : 0.0058    ndcg@5 : 0.0075    ndcg@10 : 0.0106    ndcg@20 : 0.0147    
+Tue 14 Oct 2025 22:58:28 INFO  Saving current best: saved/SASRecD-Oct-14-2025_22-54-53.pth
+Tue 14 Oct 2025 22:58:55 INFO  epoch 8 training [time: 27.19s, train loss: 1782.6590]
+Tue 14 Oct 2025 22:59:21 INFO  epoch 9 training [time: 25.70s, train loss: 1760.1094]
+Tue 14 Oct 2025 22:59:23 INFO  epoch 9 evaluating [time: 1.84s, valid_score: 0.026200]
+Tue 14 Oct 2025 22:59:23 INFO  valid result: 
+recall@3 : 0.0088    recall@5 : 0.0144    recall@10 : 0.0262    recall@20 : 0.0457    ndcg@3 : 0.0063    ndcg@5 : 0.0086    ndcg@10 : 0.0123    ndcg@20 : 0.0173    
+Tue 14 Oct 2025 22:59:23 INFO  Saving current best: saved/SASRecD-Oct-14-2025_22-54-53.pth
+Tue 14 Oct 2025 22:59:48 INFO  epoch 10 training [time: 25.69s, train loss: 1738.5777]
+Tue 14 Oct 2025 23:00:14 INFO  epoch 11 training [time: 25.55s, train loss: 1718.1779]
+Tue 14 Oct 2025 23:00:16 INFO  epoch 11 evaluating [time: 1.85s, valid_score: 0.034000]
+Tue 14 Oct 2025 23:00:16 INFO  valid result: 
+recall@3 : 0.0123    recall@5 : 0.0187    recall@10 : 0.034    recall@20 : 0.0554    ndcg@3 : 0.0082    ndcg@5 : 0.0108    ndcg@10 : 0.0157    ndcg@20 : 0.0211    
+Tue 14 Oct 2025 23:00:16 INFO  Saving current best: saved/SASRecD-Oct-14-2025_22-54-53.pth
+Tue 14 Oct 2025 23:00:42 INFO  epoch 12 training [time: 25.67s, train loss: 1698.3090]
+Tue 14 Oct 2025 23:01:08 INFO  epoch 13 training [time: 26.31s, train loss: 1679.3023]
+Tue 14 Oct 2025 23:01:10 INFO  epoch 13 evaluating [time: 2.01s, valid_score: 0.041500]
+Tue 14 Oct 2025 23:01:10 INFO  valid result: 
+recall@3 : 0.0162    recall@5 : 0.0246    recall@10 : 0.0415    recall@20 : 0.0641    ndcg@3 : 0.0106    ndcg@5 : 0.014    ndcg@10 : 0.0195    ndcg@20 : 0.0252    
+Tue 14 Oct 2025 23:01:10 INFO  Saving current best: saved/SASRecD-Oct-14-2025_22-54-53.pth
+Tue 14 Oct 2025 23:01:36 INFO  epoch 14 training [time: 25.75s, train loss: 1660.8579]
+Tue 14 Oct 2025 23:02:01 INFO  epoch 15 training [time: 25.75s, train loss: 1643.0379]
+Tue 14 Oct 2025 23:02:03 INFO  epoch 15 evaluating [time: 1.81s, valid_score: 0.048100]
+Tue 14 Oct 2025 23:02:03 INFO  valid result: 
+recall@3 : 0.0196    recall@5 : 0.029    recall@10 : 0.0481    recall@20 : 0.0709    ndcg@3 : 0.0124    ndcg@5 : 0.0162    ndcg@10 : 0.0224    ndcg@20 : 0.0281    
+Tue 14 Oct 2025 23:02:03 INFO  Saving current best: saved/SASRecD-Oct-14-2025_22-54-53.pth
+Tue 14 Oct 2025 23:02:31 INFO  epoch 16 training [time: 27.30s, train loss: 1625.7816]
+Tue 14 Oct 2025 23:02:56 INFO  epoch 17 training [time: 25.51s, train loss: 1609.7456]
+Tue 14 Oct 2025 23:02:58 INFO  epoch 17 evaluating [time: 1.88s, valid_score: 0.051500]
+Tue 14 Oct 2025 23:02:58 INFO  valid result: 
+recall@3 : 0.0216    recall@5 : 0.033    recall@10 : 0.0515    recall@20 : 0.0766    ndcg@3 : 0.0135    ndcg@5 : 0.0181    ndcg@10 : 0.0241    ndcg@20 : 0.0304    
+Tue 14 Oct 2025 23:02:58 INFO  Saving current best: saved/SASRecD-Oct-14-2025_22-54-53.pth
+Tue 14 Oct 2025 23:03:24 INFO  epoch 18 training [time: 25.70s, train loss: 1594.5477]
+Tue 14 Oct 2025 23:03:49 INFO  epoch 19 training [time: 25.60s, train loss: 1579.5387]
+Tue 14 Oct 2025 23:03:51 INFO  epoch 19 evaluating [time: 1.89s, valid_score: 0.055200]
+Tue 14 Oct 2025 23:03:51 INFO  valid result: 
+recall@3 : 0.0234    recall@5 : 0.0351    recall@10 : 0.0552    recall@20 : 0.0814    ndcg@3 : 0.0144    ndcg@5 : 0.0192    ndcg@10 : 0.0257    ndcg@20 : 0.0323    
+Tue 14 Oct 2025 23:03:51 INFO  Saving current best: saved/SASRecD-Oct-14-2025_22-54-53.pth
+Tue 14 Oct 2025 23:04:17 INFO  epoch 20 training [time: 25.63s, train loss: 1565.9040]
+Tue 14 Oct 2025 23:04:43 INFO  epoch 21 training [time: 25.56s, train loss: 1552.4137]
+Tue 14 Oct 2025 23:04:44 INFO  epoch 21 evaluating [time: 1.84s, valid_score: 0.057600]
+Tue 14 Oct 2025 23:04:44 INFO  valid result: 
+recall@3 : 0.0255    recall@5 : 0.0374    recall@10 : 0.0576    recall@20 : 0.084    ndcg@3 : 0.0155    ndcg@5 : 0.0203    ndcg@10 : 0.0268    ndcg@20 : 0.0335    
+Tue 14 Oct 2025 23:04:45 INFO  Saving current best: saved/SASRecD-Oct-14-2025_22-54-53.pth
+Tue 14 Oct 2025 23:05:10 INFO  epoch 22 training [time: 25.61s, train loss: 1539.6202]
+Tue 14 Oct 2025 23:05:36 INFO  epoch 23 training [time: 25.63s, train loss: 1527.3850]
+Tue 14 Oct 2025 23:05:38 INFO  epoch 23 evaluating [time: 1.81s, valid_score: 0.060100]
+Tue 14 Oct 2025 23:05:38 INFO  valid result: 
+recall@3 : 0.026    recall@5 : 0.0391    recall@10 : 0.0601    recall@20 : 0.0869    ndcg@3 : 0.0157    ndcg@5 : 0.0211    ndcg@10 : 0.0279    ndcg@20 : 0.0346    
+Tue 14 Oct 2025 23:05:38 INFO  Saving current best: saved/SASRecD-Oct-14-2025_22-54-53.pth
+Tue 14 Oct 2025 23:06:05 INFO  epoch 24 training [time: 27.21s, train loss: 1515.4703]
+Tue 14 Oct 2025 23:06:31 INFO  epoch 25 training [time: 25.65s, train loss: 1504.3951]
+Tue 14 Oct 2025 23:06:32 INFO  epoch 25 evaluating [time: 1.82s, valid_score: 0.060500]
+Tue 14 Oct 2025 23:06:32 INFO  valid result: 
+recall@3 : 0.0272    recall@5 : 0.0405    recall@10 : 0.0605    recall@20 : 0.0882    ndcg@3 : 0.0163    ndcg@5 : 0.0218    ndcg@10 : 0.0282    ndcg@20 : 0.0352    
+Tue 14 Oct 2025 23:06:32 INFO  Saving current best: saved/SASRecD-Oct-14-2025_22-54-53.pth
+Tue 14 Oct 2025 23:06:58 INFO  epoch 26 training [time: 25.63s, train loss: 1494.0381]
+Tue 14 Oct 2025 23:07:24 INFO  epoch 27 training [time: 25.57s, train loss: 1483.5737]
+Tue 14 Oct 2025 23:07:25 INFO  epoch 27 evaluating [time: 1.79s, valid_score: 0.061700]
+Tue 14 Oct 2025 23:07:25 INFO  valid result: 
+recall@3 : 0.0276    recall@5 : 0.0408    recall@10 : 0.0617    recall@20 : 0.0909    ndcg@3 : 0.0165    ndcg@5 : 0.0219    ndcg@10 : 0.0287    ndcg@20 : 0.036    
+Tue 14 Oct 2025 23:07:26 INFO  Saving current best: saved/SASRecD-Oct-14-2025_22-54-53.pth
+Tue 14 Oct 2025 23:07:51 INFO  epoch 28 training [time: 25.64s, train loss: 1473.8360]
+Tue 14 Oct 2025 23:08:17 INFO  epoch 29 training [time: 25.60s, train loss: 1464.6852]
+Tue 14 Oct 2025 23:08:19 INFO  epoch 29 evaluating [time: 1.91s, valid_score: 0.063200]
+Tue 14 Oct 2025 23:08:19 INFO  valid result: 
+recall@3 : 0.028    recall@5 : 0.041    recall@10 : 0.0632    recall@20 : 0.092    ndcg@3 : 0.0168    ndcg@5 : 0.0221    ndcg@10 : 0.0293    ndcg@20 : 0.0365    
+Tue 14 Oct 2025 23:08:19 INFO  Saving current best: saved/SASRecD-Oct-14-2025_22-54-53.pth
+Tue 14 Oct 2025 23:08:44 INFO  epoch 30 training [time: 25.65s, train loss: 1455.7907]
+Tue 14 Oct 2025 23:09:10 INFO  epoch 31 training [time: 25.68s, train loss: 1446.7924]
+Tue 14 Oct 2025 23:09:12 INFO  epoch 31 evaluating [time: 1.83s, valid_score: 0.062700]
+Tue 14 Oct 2025 23:09:12 INFO  valid result: 
+recall@3 : 0.0279    recall@5 : 0.0416    recall@10 : 0.0627    recall@20 : 0.0933    ndcg@3 : 0.0167    ndcg@5 : 0.0223    ndcg@10 : 0.0291    ndcg@20 : 0.0368    
+Tue 14 Oct 2025 23:09:39 INFO  epoch 32 training [time: 27.25s, train loss: 1438.6369]
+Tue 14 Oct 2025 23:10:05 INFO  epoch 33 training [time: 25.67s, train loss: 1430.7579]
+Tue 14 Oct 2025 23:10:07 INFO  epoch 33 evaluating [time: 1.81s, valid_score: 0.063400]
+Tue 14 Oct 2025 23:10:07 INFO  valid result: 
+recall@3 : 0.0287    recall@5 : 0.0418    recall@10 : 0.0634    recall@20 : 0.0946    ndcg@3 : 0.0171    ndcg@5 : 0.0225    ndcg@10 : 0.0295    ndcg@20 : 0.0373    
+Tue 14 Oct 2025 23:10:07 INFO  Saving current best: saved/SASRecD-Oct-14-2025_22-54-53.pth
+Tue 14 Oct 2025 23:10:32 INFO  epoch 34 training [time: 25.61s, train loss: 1422.9043]
+Tue 14 Oct 2025 23:10:58 INFO  epoch 35 training [time: 25.64s, train loss: 1416.3509]
+Tue 14 Oct 2025 23:11:00 INFO  epoch 35 evaluating [time: 1.84s, valid_score: 0.063600]
+Tue 14 Oct 2025 23:11:00 INFO  valid result: 
+recall@3 : 0.0285    recall@5 : 0.0417    recall@10 : 0.0636    recall@20 : 0.0951    ndcg@3 : 0.0171    ndcg@5 : 0.0225    ndcg@10 : 0.0296    ndcg@20 : 0.0375    
+Tue 14 Oct 2025 23:11:00 INFO  Saving current best: saved/SASRecD-Oct-14-2025_22-54-53.pth
+Tue 14 Oct 2025 23:11:26 INFO  epoch 36 training [time: 25.64s, train loss: 1409.0992]
+Tue 14 Oct 2025 23:11:51 INFO  epoch 37 training [time: 25.58s, train loss: 1402.2873]
+Tue 14 Oct 2025 23:11:53 INFO  epoch 37 evaluating [time: 1.91s, valid_score: 0.063600]
+Tue 14 Oct 2025 23:11:53 INFO  valid result: 
+recall@3 : 0.0286    recall@5 : 0.0419    recall@10 : 0.0636    recall@20 : 0.0946    ndcg@3 : 0.0171    ndcg@5 : 0.0226    ndcg@10 : 0.0296    ndcg@20 : 0.0374    
+Tue 14 Oct 2025 23:12:19 INFO  epoch 38 training [time: 25.66s, train loss: 1396.3305]
+Tue 14 Oct 2025 23:12:44 INFO  epoch 39 training [time: 25.62s, train loss: 1389.9654]
+Tue 14 Oct 2025 23:12:46 INFO  epoch 39 evaluating [time: 1.81s, valid_score: 0.064000]
+Tue 14 Oct 2025 23:12:46 INFO  valid result: 
+recall@3 : 0.029    recall@5 : 0.0426    recall@10 : 0.064    recall@20 : 0.0955    ndcg@3 : 0.0173    ndcg@5 : 0.0229    ndcg@10 : 0.0298    ndcg@20 : 0.0377    
+Tue 14 Oct 2025 23:12:46 INFO  Saving current best: saved/SASRecD-Oct-14-2025_22-54-53.pth
+Tue 14 Oct 2025 23:13:14 INFO  epoch 40 training [time: 27.38s, train loss: 1384.3976]
+Tue 14 Oct 2025 23:13:39 INFO  epoch 41 training [time: 25.48s, train loss: 1378.6948]
+Tue 14 Oct 2025 23:13:41 INFO  epoch 41 evaluating [time: 1.81s, valid_score: 0.065200]
+Tue 14 Oct 2025 23:13:41 INFO  valid result: 
+recall@3 : 0.0286    recall@5 : 0.0424    recall@10 : 0.0652    recall@20 : 0.0956    ndcg@3 : 0.0172    ndcg@5 : 0.0229    ndcg@10 : 0.0302    ndcg@20 : 0.0378    
+Tue 14 Oct 2025 23:13:41 INFO  Saving current best: saved/SASRecD-Oct-14-2025_22-54-53.pth
+Tue 14 Oct 2025 23:14:07 INFO  epoch 42 training [time: 25.64s, train loss: 1373.1033]
+Tue 14 Oct 2025 23:14:32 INFO  epoch 43 training [time: 25.62s, train loss: 1368.2035]
+Tue 14 Oct 2025 23:14:34 INFO  epoch 43 evaluating [time: 1.86s, valid_score: 0.065700]
+Tue 14 Oct 2025 23:14:34 INFO  valid result: 
+recall@3 : 0.0292    recall@5 : 0.0428    recall@10 : 0.0657    recall@20 : 0.0957    ndcg@3 : 0.0175    ndcg@5 : 0.0231    ndcg@10 : 0.0304    ndcg@20 : 0.038    
+Tue 14 Oct 2025 23:14:34 INFO  Saving current best: saved/SASRecD-Oct-14-2025_22-54-53.pth
+Tue 14 Oct 2025 23:15:00 INFO  epoch 44 training [time: 25.65s, train loss: 1363.3249]
+Tue 14 Oct 2025 23:15:26 INFO  epoch 45 training [time: 25.62s, train loss: 1357.4632]
+Tue 14 Oct 2025 23:15:27 INFO  epoch 45 evaluating [time: 1.80s, valid_score: 0.064600]
+Tue 14 Oct 2025 23:15:27 INFO  valid result: 
+recall@3 : 0.0288    recall@5 : 0.042    recall@10 : 0.0646    recall@20 : 0.0954    ndcg@3 : 0.0173    ndcg@5 : 0.0228    ndcg@10 : 0.03    ndcg@20 : 0.0378    
+Tue 14 Oct 2025 23:15:53 INFO  epoch 46 training [time: 25.62s, train loss: 1353.0067]
+Tue 14 Oct 2025 23:16:19 INFO  epoch 47 training [time: 25.65s, train loss: 1348.2112]
+Tue 14 Oct 2025 23:16:20 INFO  epoch 47 evaluating [time: 1.79s, valid_score: 0.064700]
+Tue 14 Oct 2025 23:16:20 INFO  valid result: 
+recall@3 : 0.0286    recall@5 : 0.0422    recall@10 : 0.0647    recall@20 : 0.0952    ndcg@3 : 0.0173    ndcg@5 : 0.0229    ndcg@10 : 0.0301    ndcg@20 : 0.0378    
+Tue 14 Oct 2025 23:16:48 INFO  epoch 48 training [time: 27.25s, train loss: 1344.1563]
+Tue 14 Oct 2025 23:17:13 INFO  epoch 49 training [time: 25.71s, train loss: 1340.1358]
+Tue 14 Oct 2025 23:17:15 INFO  epoch 49 evaluating [time: 1.81s, valid_score: 0.064700]
+Tue 14 Oct 2025 23:17:15 INFO  valid result: 
+recall@3 : 0.0285    recall@5 : 0.0421    recall@10 : 0.0647    recall@20 : 0.0954    ndcg@3 : 0.0174    ndcg@5 : 0.023    ndcg@10 : 0.0303    ndcg@20 : 0.038    
+Tue 14 Oct 2025 23:17:41 INFO  epoch 50 training [time: 25.67s, train loss: 1335.6412]
+Tue 14 Oct 2025 23:18:06 INFO  epoch 51 training [time: 25.55s, train loss: 1331.2294]
+Tue 14 Oct 2025 23:18:08 INFO  epoch 51 evaluating [time: 1.80s, valid_score: 0.064800]
+Tue 14 Oct 2025 23:18:08 INFO  valid result: 
+recall@3 : 0.0283    recall@5 : 0.0421    recall@10 : 0.0648    recall@20 : 0.0956    ndcg@3 : 0.0173    ndcg@5 : 0.023    ndcg@10 : 0.0303    ndcg@20 : 0.038    
+Tue 14 Oct 2025 23:18:34 INFO  epoch 52 training [time: 25.59s, train loss: 1326.5911]
+Tue 14 Oct 2025 23:18:59 INFO  epoch 53 training [time: 25.70s, train loss: 1322.2938]
+Tue 14 Oct 2025 23:19:01 INFO  epoch 53 evaluating [time: 1.79s, valid_score: 0.065300]
+Tue 14 Oct 2025 23:19:01 INFO  valid result: 
+recall@3 : 0.0284    recall@5 : 0.0423    recall@10 : 0.0653    recall@20 : 0.0955    ndcg@3 : 0.0174    ndcg@5 : 0.0232    ndcg@10 : 0.0306    ndcg@20 : 0.0381    
+Tue 14 Oct 2025 23:19:27 INFO  epoch 54 training [time: 25.62s, train loss: 1318.8842]
+Tue 14 Oct 2025 23:19:53 INFO  epoch 55 training [time: 25.63s, train loss: 1315.4422]
+Tue 14 Oct 2025 23:19:54 INFO  epoch 55 evaluating [time: 1.80s, valid_score: 0.064800]
+Tue 14 Oct 2025 23:19:54 INFO  valid result: 
+recall@3 : 0.0285    recall@5 : 0.0425    recall@10 : 0.0648    recall@20 : 0.0946    ndcg@3 : 0.0174    ndcg@5 : 0.0231    ndcg@10 : 0.0303    ndcg@20 : 0.0378    
+Tue 14 Oct 2025 23:20:22 INFO  epoch 56 training [time: 27.35s, train loss: 1311.4164]
+Tue 14 Oct 2025 23:20:47 INFO  epoch 57 training [time: 25.54s, train loss: 1307.8707]
+Tue 14 Oct 2025 23:20:49 INFO  epoch 57 evaluating [time: 1.84s, valid_score: 0.064900]
+Tue 14 Oct 2025 23:20:49 INFO  valid result: 
+recall@3 : 0.0282    recall@5 : 0.0418    recall@10 : 0.0649    recall@20 : 0.0947    ndcg@3 : 0.0173    ndcg@5 : 0.0229    ndcg@10 : 0.0303    ndcg@20 : 0.0378    
+Tue 14 Oct 2025 23:21:15 INFO  epoch 58 training [time: 25.62s, train loss: 1303.8440]
+Tue 14 Oct 2025 23:21:40 INFO  epoch 59 training [time: 25.63s, train loss: 1299.6798]
+Tue 14 Oct 2025 23:21:42 INFO  epoch 59 evaluating [time: 1.94s, valid_score: 0.064800]
+Tue 14 Oct 2025 23:21:42 INFO  valid result: 
+recall@3 : 0.0287    recall@5 : 0.042    recall@10 : 0.0648    recall@20 : 0.0949    ndcg@3 : 0.0176    ndcg@5 : 0.0231    ndcg@10 : 0.0304    ndcg@20 : 0.0379    
+Tue 14 Oct 2025 23:22:08 INFO  epoch 60 training [time: 25.61s, train loss: 1295.6068]
+Tue 14 Oct 2025 23:22:33 INFO  epoch 61 training [time: 25.63s, train loss: 1292.4592]
+Tue 14 Oct 2025 23:22:35 INFO  epoch 61 evaluating [time: 1.87s, valid_score: 0.064000]
+Tue 14 Oct 2025 23:22:35 INFO  valid result: 
+recall@3 : 0.0285    recall@5 : 0.0415    recall@10 : 0.064    recall@20 : 0.094    ndcg@3 : 0.0175    ndcg@5 : 0.0229    ndcg@10 : 0.0301    ndcg@20 : 0.0376    
+Tue 14 Oct 2025 23:23:01 INFO  epoch 62 training [time: 25.63s, train loss: 1288.9956]
+Tue 14 Oct 2025 23:23:27 INFO  epoch 63 training [time: 25.63s, train loss: 1285.7059]
+Tue 14 Oct 2025 23:23:28 INFO  epoch 63 evaluating [time: 1.82s, valid_score: 0.063500]
+Tue 14 Oct 2025 23:23:28 INFO  valid result: 
+recall@3 : 0.0281    recall@5 : 0.0413    recall@10 : 0.0635    recall@20 : 0.0934    ndcg@3 : 0.0174    ndcg@5 : 0.0228    ndcg@10 : 0.0299    ndcg@20 : 0.0374    
+Tue 14 Oct 2025 23:23:56 INFO  epoch 64 training [time: 27.29s, train loss: 1281.6147]
+Tue 14 Oct 2025 23:24:21 INFO  epoch 65 training [time: 25.72s, train loss: 1278.6369]
+Tue 14 Oct 2025 23:24:23 INFO  epoch 65 evaluating [time: 1.96s, valid_score: 0.063500]
+Tue 14 Oct 2025 23:24:23 INFO  valid result: 
+recall@3 : 0.0282    recall@5 : 0.0414    recall@10 : 0.0635    recall@20 : 0.0927    ndcg@3 : 0.0174    ndcg@5 : 0.0228    ndcg@10 : 0.0299    ndcg@20 : 0.0372    
+Tue 14 Oct 2025 23:24:23 INFO  Finished training, best eval result in epoch 43
+Tue 14 Oct 2025 23:24:23 INFO  Loading model structure and parameters from saved/SASRecD-Oct-14-2025_22-54-53.pth
+Tue 14 Oct 2025 23:24:25 INFO  best valid : {'recall@3': np.float64(0.0292), 'recall@5': np.float64(0.0428), 'recall@10': np.float64(0.0657), 'recall@20': np.float64(0.0957), 'ndcg@3': np.float64(0.0175), 'ndcg@5': np.float64(0.0231), 'ndcg@10': np.float64(0.0304), 'ndcg@20': np.float64(0.038)}
+Tue 14 Oct 2025 23:24:25 INFO  test result: {'recall@3': np.float64(0.0233), 'recall@5': np.float64(0.0345), 'recall@10': np.float64(0.0536), 'recall@20': np.float64(0.0777), 'ndcg@3': np.float64(0.014), 'ndcg@5': np.float64(0.0186), 'ndcg@10': np.float64(0.0247), 'ndcg@20': np.float64(0.0308)}
