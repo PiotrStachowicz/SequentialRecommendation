@@ -99,7 +99,7 @@ class SASRecD(SequentialRecommender):
                         ).astype(np.float32)
                     )
                 )
-                #emb_layer.original_weight = emb_layer.weight.detach().clone().to(self.device)
+                emb_layer.original_weight = emb_layer.weight.detach().clone().to(self.device)
                 emb_layer.mlp = MLP(
                     input_dim=feature_dim, 
                     output_dim=self.attribute_hidden_size[i], 
@@ -166,7 +166,7 @@ class SASRecD(SequentialRecommender):
                 )
             elif self.attribute_predictor[i] == 'cos_sim':
                 module_list.append(
-                    nn.Linear(in_features=self.hidden_size, out_features=self.attribute_hidden_size[i])
+                    nn.Linear(in_features=self.hidden_size, out_features=self.feature_embed_layer_list[i].weight.shape[1])
                 )
             elif self.attribute_predictor[i] == '' or self.attribute_predictor[i] == 'not':
                 module_list.append(None)
@@ -239,6 +239,7 @@ class SASRecD(SequentialRecommender):
             if self.feature_type[i] == 'static':
                 static_embedding = feature_embed_layer(item_seq).unsqueeze(-2)
                 reduced_embedding = feature_embed_layer.mlp(static_embedding)
+
                 feature_table.append(reduced_embedding)
             elif self.feature_type[i] == 'categorical':
                 sparse_embedding, dense_embedding = feature_embed_layer(None, item_seq)
@@ -291,16 +292,15 @@ class SASRecD(SequentialRecommender):
 
                 if self.attribute_predictor[i] == 'cos_sim':
                     true_emb = self.feature_embed_layer_list[i](pos_items)
-                    reduced_emb = self.feature_embed_layer_list[i].mlp(true_emb)
 
                     pred_emb = a_predictor(seq_output)
 
                     # Normalize embeddings to unit vectors
                     pred_emb_norm = torch.nn.functional.normalize(pred_emb, p=2, dim=-1)
-                    reduced_emb_norm = torch.nn.functional.normalize(reduced_emb, p=2, dim=-1)
+                    true_emb_norm = torch.nn.functional.normalize(true_emb, p=2, dim=-1)
 
                     # Compute cosine similarity
-                    cos_sim = (pred_emb_norm * reduced_emb_norm).sum(dim=-1)
+                    cos_sim = (pred_emb_norm * true_emb_norm).sum(dim=-1)
                     attribute_loss = (1 - cos_sim).mean()
 
                     loss_dic[self.selected_features[i]] = attribute_loss

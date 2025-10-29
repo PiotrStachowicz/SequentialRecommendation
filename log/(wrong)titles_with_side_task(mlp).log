@@ -345,3 +345,21 @@ Wed 29 Oct 2025 19:23:14 INFO  epoch 59 evaluating [time: 2.02s, valid_score: 0.
 Wed 29 Oct 2025 19:23:14 INFO  valid result: 
 recall@3 : 0.0288    recall@5 : 0.043    recall@10 : 0.0654    recall@20 : 0.0942    ndcg@3 : 0.0177    ndcg@5 : 0.0236    ndcg@10 : 0.0307    ndcg@20 : 0.038    
 Wed 29 Oct 2025 19:23:44 INFO  epoch 60 training [time: 30.13s, train loss: 1144.5628]
+Wed 29 Oct 2025 19:24:14 INFO  epoch 61 training [time: 30.16s, train loss: 1141.2109]
+Wed 29 Oct 2025 19:24:16 INFO  epoch 61 evaluating [time: 2.05s, valid_score: 0.064600]
+Wed 29 Oct 2025 19:24:16 INFO  valid result: 
+recall@3 : 0.0285    recall@5 : 0.0431    recall@10 : 0.0646    recall@20 : 0.0935    ndcg@3 : 0.0176    ndcg@5 : 0.0236    ndcg@10 : 0.0305    ndcg@20 : 0.0378    
+Wed 29 Oct 2025 19:24:46 INFO  epoch 62 training [time: 30.09s, train loss: 1136.9248]
+Wed 29 Oct 2025 19:25:16 INFO  epoch 63 training [time: 30.05s, train loss: 1134.5423]
+Wed 29 Oct 2025 19:25:18 INFO  epoch 63 evaluating [time: 1.99s, valid_score: 0.064100]
+Wed 29 Oct 2025 19:25:18 INFO  valid result: 
+recall@3 : 0.0286    recall@5 : 0.0431    recall@10 : 0.0641    recall@20 : 0.0936    ndcg@3 : 0.0176    ndcg@5 : 0.0236    ndcg@10 : 0.0304    ndcg@20 : 0.0378    
+Wed 29 Oct 2025 19:25:49 INFO  epoch 64 training [time: 31.08s, train loss: 1130.1383]
+Wed 29 Oct 2025 19:26:21 INFO  epoch 65 training [time: 31.86s, train loss: 1126.5296]
+Wed 29 Oct 2025 19:26:23 INFO  epoch 65 evaluating [time: 2.18s, valid_score: 0.063800]
+Wed 29 Oct 2025 19:26:23 INFO  valid result: 
+recall@3 : 0.0285    recall@5 : 0.0422    recall@10 : 0.0638    recall@20 : 0.0929    ndcg@3 : 0.0176    ndcg@5 : 0.0233    ndcg@10 : 0.0302    ndcg@20 : 0.0375    
+Wed 29 Oct 2025 19:26:23 INFO  Finished training, best eval result in epoch 43
+Wed 29 Oct 2025 19:26:23 INFO  Loading model structure and parameters from saved/SASRecD-Oct-29-2025_18-51-53.pth
+Wed 29 Oct 2025 19:26:26 INFO  best valid : {'recall@3': np.float64(0.0289), 'recall@5': np.float64(0.0426), 'recall@10': np.float64(0.0655), 'recall@20': np.float64(0.0951), 'ndcg@3': np.float64(0.0174), 'ndcg@5': np.float64(0.0231), 'ndcg@10': np.float64(0.0304), 'ndcg@20': np.float64(0.0379)}
+Wed 29 Oct 2025 19:26:26 INFO  test result: {'recall@3': np.float64(0.0228), 'recall@5': np.float64(0.0347), 'recall@10': np.float64(0.0524), 'recall@20': np.float64(0.0762), 'ndcg@3': np.float64(0.0137), 'ndcg@5': np.float64(0.0186), 'ndcg@10': np.float64(0.0242), 'ndcg@20': np.float64(0.0302)}
