@@ -16,6 +16,7 @@ import numpy as np
 from tensorflow.python.keras.backend import print_tensor
 from torch import nn
 import wandb
+import math
 
 
 from recbole.model.abstract_recommender import SequentialRecommender
@@ -24,21 +25,36 @@ from recbole.model.loss import BPRLoss
 import copy
 
 class MLP(nn.Module):
-    def __init__(self, input_dim=4096, hidden_dim=512, output_dim=128, dropout=0.1, device='cuda'):
+    def __init__(self, input_dim=4096, output_dim=128, dropout=0.1, device='cuda'):
         super().__init__()
 
-        self.net = nn.Sequential(
-            nn.Linear(in_features=input_dim, out_features=hidden_dim),
-            nn.ReLU(device),
-            nn.Dropout(0.1),
-            nn.Linear(in_features=hidden_dim, out_features=output_dim),
-            nn.LayerNorm(output_dim)
-        )
+        inp_power = int(math.log2(input_dim))
+        out_power = int(math.log2(output_dim))
 
+        last_power = out_power + 1
+
+        module_list = []
+        for power in range(inp_power, out_power + 1, -1):
+            module_list.append(nn.Linear(in_features=2**power, out_features=2**(power-1)))
+            module_list.append(nn.ReLU())
+            module_list.append(nn.Dropout(dropout))
+
+        module_list.append(nn.Linear(in_features=2**last_power, out_features=output_dim))
+        module_list.append(nn.LayerNorm(output_dim))
+
+        self.net = nn.Sequential(*module_list)
         self.to(device)
     
     def forward(self, X):
-        return self.net(X)
+        #noise = torch.randn_like(X) * 0.01
+
+        #noisy_res = self.net(X + noise)
+        res = self.net(X)
+        
+        # MSE error for consistency
+        #self.consistency_loss = torch.mean((noisy_res - res) ** 2)
+
+        return res
 
 
 class SASRecD(SequentialRecommender):
@@ -285,6 +301,7 @@ class SASRecD(SequentialRecommender):
 
             loss_dic = {'item_loss': loss}
             attribute_loss_sum = 0
+            #consistency_loss = 0
 
             for i, a_predictor in enumerate(self.ap):
                 if self.attribute_predictor[i] == '' or self.attribute_predictor[i] == 'not':
@@ -360,6 +377,19 @@ class SASRecD(SequentialRecommender):
             total_loss = loss
             if features > 0:
                 total_loss += (attribute_loss_sum / features)
+
+            # consistency loss
+            # mlp_consistency_loss = 0.0
+            # count = 0
+            # for layer in self.feature_embed_layer_list:
+            #     if hasattr(layer, 'mlp'):
+            #         mlp_consistency_loss += layer.mlp.consistency_loss
+            #         count += 1
+
+            # if count > 0:
+            #     mlp_consistency_loss = mlp_consistency_loss / count
+            #     total_loss += mlp_consistency_loss
+            #     loss_dic['consistency_loss'] = mlp_consistency_loss
 
             # reg_loss = 0.0
             # reg_lamda = 5
