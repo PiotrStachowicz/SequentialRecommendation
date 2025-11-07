@@ -55,9 +55,9 @@ lamdas: [5, 5]
 attribute_predictor: ['cos_sim', 'cos_sim']
 
 # training settings
-wandb_run_name: 'log_mlp_titles_images'
+wandb_run_name: 'log_mlp_titles_images_noise'
 epochs: 200
-train_batch_size: 512
+train_batch_size: 1024
 learner: adam
 learning_rate: 0.0001
 eval_step: 2

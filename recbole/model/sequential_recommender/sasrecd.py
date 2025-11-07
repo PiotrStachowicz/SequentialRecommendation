@@ -46,15 +46,15 @@ class MLP(nn.Module):
         self.to(device)
     
     def forward(self, X):
-        #noise = torch.randn_like(X) * 0.01
+        noise = torch.randn_like(X) * 0.01
 
-        #noisy_res = self.net(X + noise)
-        res = self.net(X)
+        noisy_res = self.net(X + noise)
+        # res = self.net(X)
         
-        # MSE error for consistency
-        #self.consistency_loss = torch.mean((noisy_res - res) ** 2)
+        # # MSE error for consistency
+        # self.consistency_loss = torch.mean((noisy_res - res) ** 2)
 
-        return res
+        return noisy_res
 
 
 class SASRecD(SequentialRecommender):
@@ -105,9 +105,9 @@ class SASRecD(SequentialRecommender):
 
         for i, feature in enumerate(self.selected_features):
             feature_type = self.feature_type[i]
-            feature_dim = self.orig_attribute_hidden_size[i]
             
             if feature_type == 'static':
+                feature_dim = self.orig_attribute_hidden_size[i]
                 emb_layer = nn.Embedding.from_pretrained(
                     torch.from_numpy(
                         dataset.get_preload_weight(
@@ -378,7 +378,7 @@ class SASRecD(SequentialRecommender):
             if features > 0:
                 total_loss += (attribute_loss_sum / features)
 
-            # consistency loss
+            #consistency loss
             # mlp_consistency_loss = 0.0
             # count = 0
             # for layer in self.feature_embed_layer_list:
