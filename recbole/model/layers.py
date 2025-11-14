@@ -529,7 +529,7 @@ class DIFMultiHeadAttention(nn.Module):
         hidden_states = self.LayerNorm(hidden_states + input_tensor)
         return hidden_states
 
-class NOVAMultiHeadAttention(nn.Module):
+class NOVAMultiHeadAttention(MultiHeadAttention):
     """
     Multi-head Self-attention layers, a attention score dropout layer is introduced.
 
@@ -718,7 +718,7 @@ class DIFTransformerLayer(nn.Module):
         feedforward_output = self.feed_forward(attention_output)
         return feedforward_output
 
-class NOVATransformerLayer(nn.Module):
+class NOVATransformerLayer(TransformerLayer):
     """
     One transformer layer consists of a multi-head self-attention layer and a point-wise feed-forward layer.
 
