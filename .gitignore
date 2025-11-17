@@ -20,3 +20,4 @@ swap
 *.b
 *swap/
 *wandb*
+.sh
