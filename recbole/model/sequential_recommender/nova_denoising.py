@@ -4,7 +4,7 @@
 # @Email   : hui.wang@ruc.edu.cn
 
 r"""
-SASRecF
+NOVA based on SASRecF
 ################################################
 """
 
@@ -15,18 +15,18 @@ import copy
 import wandb
 
 from recbole.model.abstract_recommender import SequentialRecommender
-from recbole.model.layers import TransformerEncoder, FeatureSeqEmbLayer
+from recbole.model.layers import NOVATransformerEncoder, FeatureSeqEmbLayer
 from recbole.model.loss import BPRLoss
-
 from recbole.model.denoising import GaussianDiffusion
 
-class SASRecF_Denoising(SequentialRecommender):
+
+class NOVA_Denoising(SequentialRecommender):
     """This is an extension of SASRec, which concatenates item representations and item attribute representations
     as the input to the model.
     """
 
     def __init__(self, config, dataset):
-        super(SASRecF_Denoising, self).__init__(config, dataset)
+        super(NOVA_Denoising, self).__init__(config, dataset)
 
         # load parameters info
         self.n_layers = config['n_layers']
@@ -54,7 +54,7 @@ class SASRecF_Denoising(SequentialRecommender):
 
         wandb.init(
             project="SequentialRecommendation",
-            name= 'SASRecF_' + config['wandb_run_name']
+            name='NOVA_Denoising_' + config['wandb_run_name']
         )
 
         layer_list = []
@@ -68,12 +68,13 @@ class SASRecF_Denoising(SequentialRecommender):
                     nn.Embedding.from_pretrained(
                         torch.from_numpy(
                             dataset.get_preload_weight(
-                                f"{feature.split('_')[0]}_id"
+                                list(dataset.config['preload_weight'].keys())[i]
                             ).astype(np.float32)
                         )
                     )
                 )
-                diffusion.append(GaussianDiffusion(config['diffusion']))  # przekazanie argumentów do dyfuzji, TODO: znaleźć domyślne wartości
+                diffusion.append(GaussianDiffusion(
+                    config['diffusion']))  # przekazanie argumentów do dyfuzji, TODO: znaleźć domyślne wartości
             elif feature_type == 'categorical':
                 layer_list.append(
                     copy.deepcopy(
@@ -88,11 +89,10 @@ class SASRecF_Denoising(SequentialRecommender):
                 )
                 diffusion.append(nn.Identity())
 
+        self.feature_embed_layer_list = nn.ModuleList(layer_list)
         self.diffusion = nn.ModuleList(diffusion)
 
-        self.feature_embed_layer_list = nn.ModuleList(layer_list)
-
-        self.trm_encoder = TransformerEncoder(
+        self.trm_encoder = NOVATransformerEncoder(
             n_layers=self.n_layers,
             n_heads=self.n_heads,
             hidden_size=self.hidden_size,
@@ -103,9 +103,7 @@ class SASRecF_Denoising(SequentialRecommender):
             layer_norm_eps=self.layer_norm_eps
         )
 
-        concat_input_dim = self.hidden_size + sum(self.attribute_hidden_size)
-
-        self.concat_layer = nn.Linear(concat_input_dim, self.hidden_size)
+        self.concat_layer = nn.Linear(self.hidden_size * self.num_feature_field, self.hidden_size)
 
         self.LayerNorm = nn.LayerNorm(self.hidden_size, eps=self.layer_norm_eps)
         self.dropout = nn.Dropout(self.hidden_dropout_prob)
@@ -187,17 +185,17 @@ class SASRecF_Denoising(SequentialRecommender):
         feature_emb = feature_table.view(table_shape[:-2] + (feat_num * embedding_size,))
         input_concat = torch.cat((item_emb, feature_emb), -1)  # [B 1+field_num*H]
 
-        input_emb = self.concat_layer(input_concat)
+        input_emb = self.concat_layer(input_concat)  # TUTAJ NASTĘPUJE FUZJA -- możliwe inne opcje
         input_emb = input_emb + position_embedding
         input_emb = self.LayerNorm(input_emb)
         input_emb = self.dropout(input_emb)
 
         extended_attention_mask = self.get_attention_mask(item_seq)
-        trm_output = self.trm_encoder(input_emb, extended_attention_mask, output_all_encoded_layers=True)
+        # TODO: czy dać pozycyjne do item_emb (values)?
+        trm_output = self.trm_encoder(item_emb + position_embedding, input_emb, extended_attention_mask, output_all_encoded_layers=True)
         output = trm_output[-1]
         seq_output = self.gather_indexes(output, item_seq_len - 1)
-        print(f"{loss_denoising_.shape=}")
-        return seq_output, loss_denoising_  # [B H] TODO: uwaga zmiana
+        return seq_output, loss_denoising_  # [B H]
 
     def calculate_loss(self, interaction):
         item_seq = interaction[self.ITEM_SEQ]
@@ -212,8 +210,6 @@ class SASRecF_Denoising(SequentialRecommender):
             pos_score = torch.sum(seq_output * pos_items_emb, dim=-1)  # [B]
             neg_score = torch.sum(seq_output * neg_items_emb, dim=-1)  # [B]
             loss = self.loss_fct(pos_score, neg_score)
-            wandb.log({'rec_loss': loss})
-            return loss
         else:  # self.loss_type = 'CE'
             test_item_emb = self.item_embedding.weight
             logits = torch.matmul(seq_output, test_item_emb.transpose(0, 1))
