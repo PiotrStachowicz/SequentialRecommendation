@@ -22,6 +22,32 @@ from MDSBR.model_in_diffusion import TransformerDNN, DNN, UNet, ResNet
 
 import math
 
+class MLP(nn.Module):
+    def __init__(self, input_dim=4096, output_dim=128, dropout=0.1, device='cuda'):
+        super().__init__()
+
+        inp_power = int(math.log2(input_dim))
+        out_power = int(math.log2(output_dim))
+
+        last_power = out_power + 1
+
+        module_list = []
+        for power in range(inp_power, out_power + 1, -1):
+            module_list.append(nn.Linear(in_features=2**power, out_features=2**(power-1)))
+            module_list.append(nn.ReLU())
+            module_list.append(nn.Dropout(dropout))
+
+        module_list.append(nn.Linear(in_features=2**last_power, out_features=output_dim))
+        module_list.append(nn.LayerNorm(output_dim))
+
+        self.net = nn.Sequential(*module_list)
+        self.to(device)
+    
+    def forward(self, X):
+        res = self.net(X)
+
+        return res
+
 class GaussianDiffusion(nn.Module):
     def __init__(self, config):
 
@@ -349,6 +375,7 @@ class SASRecF_Denoising(SequentialRecommender):
         self.n_heads = config['n_heads']
         self.hidden_size = config['hidden_size']  # same as embedding_size
         self.inner_size = config['inner_size']  # the dimensionality in feed-forward layer
+        self.orig_attribute_hidden_size = config['orig_attribute_hidden_size']
         self.attribute_hidden_size = config['attribute_hidden_size']
         self.hidden_dropout_prob = config['hidden_dropout_prob']
         self.attn_dropout_prob = config['attn_dropout_prob']
@@ -374,12 +401,14 @@ class SASRecF_Denoising(SequentialRecommender):
         )
 
         layer_list = []
+        self.mlp_list = []
         diffusion = []
 
         for i, feature in enumerate(self.selected_features):
             feature_type = self.feature_type[i]
 
             if feature_type == 'static':
+                feature_dim = self.orig_attribute_hidden_size[i]
                 layer_list.append(
                     nn.Embedding.from_pretrained(
                         torch.from_numpy(
@@ -389,6 +418,11 @@ class SASRecF_Denoising(SequentialRecommender):
                         )
                     )
                 )
+                self.mlp_list.append(MLP(
+                    input_dim=feature_dim, 
+                    output_dim=self.attribute_hidden_size[i], 
+                    device=self.device
+                ))
                 diffusion.append(GaussianDiffusion(config['diffusion']))  # przekazanie argumentów do dyfuzji, TODO: znaleźć domyślne wartości
             elif feature_type == 'categorical':
                 layer_list.append(
@@ -402,6 +436,7 @@ class SASRecF_Denoising(SequentialRecommender):
                         )
                     )
                 )
+                self.mlp_list.append(None)
                 diffusion.append(nn.Identity())
 
         self.diffusion = nn.ModuleList(diffusion)
@@ -484,8 +519,11 @@ class SASRecF_Denoising(SequentialRecommender):
         for i, feature_embed_layer in enumerate(self.feature_embed_layer_list):
             if self.feature_type[i] == 'static':
                 static_embedding = feature_embed_layer(item_seq)
-                static_embedding, loss_denoising = self.diffusion[i](static_embedding)
-                feature_table.append(static_embedding.unsqueeze(-2))
+
+                reduced_embedding = self.mlp_list[i](static_embedding)
+                reduced_embedding, loss_denoising = self.diffusion[i](reduced_embedding)
+
+                feature_table.append(reduced_embedding.unsqueeze(-2))
                 loss_denoising_ += loss_denoising
             elif self.feature_type[i] == 'categorical':
                 sparse_embedding, dense_embedding = feature_embed_layer(None, item_seq)
@@ -512,15 +550,16 @@ class SASRecF_Denoising(SequentialRecommender):
         trm_output = self.trm_encoder(input_emb, extended_attention_mask, output_all_encoded_layers=True)
         output = trm_output[-1]
         seq_output = self.gather_indexes(output, item_seq_len - 1)
-        print(f"{loss_denoising_.shape=}")
-        return seq_output, loss_denoising_  # [B H] TODO: uwaga zmiana
+
+        return seq_output, loss_denoising_
 
     def calculate_loss(self, interaction):
         item_seq = interaction[self.ITEM_SEQ]
         item_seq_len = interaction[self.ITEM_SEQ_LEN]
+
         seq_output, loss_denoising_ = self.forward(item_seq, item_seq_len)
-        wandb.log({'denoise_loss': loss_denoising_})
         pos_items = interaction[self.POS_ITEM_ID]
+
         if self.loss_type == 'BPR':
             neg_items = interaction[self.NEG_ITEM_ID]
             pos_items_emb = self.item_embedding(pos_items)
@@ -528,13 +567,18 @@ class SASRecF_Denoising(SequentialRecommender):
             pos_score = torch.sum(seq_output * pos_items_emb, dim=-1)  # [B]
             neg_score = torch.sum(seq_output * neg_items_emb, dim=-1)  # [B]
             loss = self.loss_fct(pos_score, neg_score)
-            wandb.log({'rec_loss': loss})
             return loss
         else:  # self.loss_type = 'CE'
             test_item_emb = self.item_embedding.weight
             logits = torch.matmul(seq_output, test_item_emb.transpose(0, 1))
             loss = self.loss_fct(logits, pos_items)
-        wandb.log({'total_loss': loss + self.l * loss_denoising_.sum()})
+
+        wandb.log({
+            'item_loss': loss, 
+            'denoising_loss': loss_denoising_.sum(), 
+            'total_loss': loss + self.l * loss_denoising_.sum()
+        })
+
         return loss + loss_denoising_.sum() * self.l
 
     def predict(self, interaction):
