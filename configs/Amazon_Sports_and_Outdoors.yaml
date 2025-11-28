@@ -53,24 +53,31 @@ weight_sharing: 'not'
 fusion_type: 'gate'
 lamdas: [5, 5]
 attribute_predictor: ['cos_sim', 'cos_sim']
-lambda: 1
 diffusion:
-  structure: "transformer"
+  device: cuda
+  dims: [1000]
+  emb_size: 20
+  mean_type: x0
+  noise_max: 0.02
+  noise_min: 0.0001
+  noise_scale: 0.1
+  noise_schedule: linear-var
+  norm: false
+  num_heads: 4
+  reweight: true
+  sampling_noise: false
+  sampling_steps: 0
+  steps: 5
+  structure: MLP
+  time_type: cat
   hiddenSize: 128
   inputSize: 128
-  noise_scale: 0.005        
-  steps: 10             
-  history_num_per_term: 10
-  mean_type: "x0"       
-  beta_fixed: true
-  noise_schedule: "linear"
-  noise_min: 1e-4
-  noise_max: 0.005
-  device: 'cuda'
+
+lambda: 0.5
 
 
 # training settings
-wandb_run_name: 'titles_images_log_mlp_denoising'
+wandb_run_name: 'titles_images_log_mlp'
 epochs: 200
 train_batch_size: 1024
 learner: adam

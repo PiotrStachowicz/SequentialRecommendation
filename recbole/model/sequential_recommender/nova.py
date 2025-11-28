@@ -12,10 +12,44 @@ import torch
 from torch import nn
 import numpy as np
 import copy
+import math
+import wandb
 
 from recbole.model.abstract_recommender import SequentialRecommender
 from recbole.model.layers import NOVATransformerEncoder, FeatureSeqEmbLayer
 from recbole.model.loss import BPRLoss
+
+class MLP(nn.Module):
+    def __init__(self, input_dim=4096, output_dim=128, dropout=0.1, device='cuda'):
+        super().__init__()
+
+        inp_power = int(math.log2(input_dim))
+        out_power = int(math.log2(output_dim))
+
+        last_power = out_power + 1
+
+        module_list = []
+        for power in range(inp_power, out_power + 1, -1):
+            module_list.append(nn.Linear(in_features=2**power, out_features=2**(power-1)))
+            module_list.append(nn.ReLU())
+            module_list.append(nn.Dropout(dropout))
+
+        module_list.append(nn.Linear(in_features=2**last_power, out_features=output_dim))
+        module_list.append(nn.LayerNorm(output_dim))
+
+        self.net = nn.Sequential(*module_list)
+        self.to(device)
+    
+    def forward(self, X):
+        # noise = torch.randn_like(X) * 0.01
+
+        # noisy_res = self.net(X + noise)
+        res = self.net(X)
+        
+        # # MSE error for consistency
+        # self.consistency_loss = torch.mean((noisy_res - res) ** 2)
+
+        return res
 
 
 class NOVA(SequentialRecommender):
@@ -31,6 +65,7 @@ class NOVA(SequentialRecommender):
         self.n_heads = config['n_heads']
         self.hidden_size = config['hidden_size']  # same as embedding_size
         self.inner_size = config['inner_size']  # the dimensionality in feed-forward layer
+        self.orig_attribute_hidden_size = config['orig_attribute_hidden_size']
         self.attribute_hidden_size = config['attribute_hidden_size']
         self.hidden_dropout_prob = config['hidden_dropout_prob']
         self.attn_dropout_prob = config['attn_dropout_prob']
@@ -50,21 +85,32 @@ class NOVA(SequentialRecommender):
         self.item_embedding = nn.Embedding(self.n_items, self.hidden_size, padding_idx=0)
         self.position_embedding = nn.Embedding(self.max_seq_length, self.hidden_size)
 
+        wandb.init(
+            project="SequentialRecommendation",
+            name= 'NOVA_' + config['wandb_run_name']
+        )
+
         layer_list = []
 
         for i, feature in enumerate(self.selected_features):
             feature_type = self.feature_type[i]
 
             if feature_type == 'static':
-                layer_list.append(
-                    nn.Embedding.from_pretrained(
-                        torch.from_numpy(
-                            dataset.get_preload_weight(
-                                list(dataset.config['preload_weight'].keys())[i]
-                            ).astype(np.float32)
-                        )
+                feature_dim = self.orig_attribute_hidden_size[i]
+                emb_layer = nn.Embedding.from_pretrained(
+                    torch.from_numpy(
+                        dataset.get_preload_weight(
+                            f"{feature.split('_')[0]}_id"
+                        ).astype(np.float32)
                     )
                 )
+                emb_layer.original_weight = emb_layer.weight.detach().clone().to(self.device)
+                emb_layer.mlp = MLP(
+                    input_dim=feature_dim, 
+                    output_dim=self.attribute_hidden_size[i], 
+                    device=self.device
+                )
+                layer_list.append(emb_layer)
             elif feature_type == 'categorical':
                 layer_list.append(
                     copy.deepcopy(
@@ -91,7 +137,7 @@ class NOVA(SequentialRecommender):
             layer_norm_eps=self.layer_norm_eps
         )
 
-        self.concat_layer = nn.Linear(self.hidden_size * self.num_feature_field, self.hidden_size)
+        self.concat_layer = nn.Linear(self.hidden_size + self.attribute_hidden_size[0] * self.num_feature_field, self.hidden_size)
 
         self.LayerNorm = nn.LayerNorm(self.hidden_size, eps=self.layer_norm_eps)
         self.dropout = nn.Dropout(self.hidden_dropout_prob)
@@ -151,7 +197,9 @@ class NOVA(SequentialRecommender):
         for i, feature_embed_layer in enumerate(self.feature_embed_layer_list):
             if self.feature_type[i] == 'static':
                 static_embedding = feature_embed_layer(item_seq).unsqueeze(-2)
-                feature_table.append(static_embedding)
+                reduced_embedding = feature_embed_layer.mlp(static_embedding)
+
+                feature_table.append(reduced_embedding)
             elif self.feature_type[i] == 'categorical':
                 sparse_embedding, dense_embedding = feature_embed_layer(None, item_seq)
                 sparse_embedding = sparse_embedding['item']
@@ -161,6 +209,7 @@ class NOVA(SequentialRecommender):
                     feature_table.append(sparse_embedding)
                 if dense_embedding is not None:
                     feature_table.append(dense_embedding)
+
 
         feature_table = torch.cat(feature_table, dim=-2)
         table_shape = feature_table.shape
@@ -192,11 +241,13 @@ class NOVA(SequentialRecommender):
             pos_score = torch.sum(seq_output * pos_items_emb, dim=-1)  # [B]
             neg_score = torch.sum(seq_output * neg_items_emb, dim=-1)  # [B]
             loss = self.loss_fct(pos_score, neg_score)
+            wandb.log({'total_loss': loss, 'item_loss': loss})
             return loss
         else:  # self.loss_type = 'CE'
             test_item_emb = self.item_embedding.weight
             logits = torch.matmul(seq_output, test_item_emb.transpose(0, 1))
             loss = self.loss_fct(logits, pos_items)
+            wandb.log({'total_loss': loss, 'item_loss': loss})
             return loss
 
     def predict(self, interaction):
