@@ -1,0 +1,357 @@
+Mon 19 Jan 2026 10:22:24 INFO  
+General Hyper Parameters:
+gpu_id = 0
+use_gpu = True
+seed = 212
+state = INFO
+reproducibility = True
+data_path = ./recbole/data/dataset/Amazon_Sports_and_Outdoors
+show_progress = True
+save_dataset = False
+save_dataloaders = False
+benchmark_filename = None
+
+Training Hyper Parameters:
+checkpoint_dir = saved
+epochs = 200
+train_batch_size = 1024
+learner = adam
+learning_rate = 0.0001
+eval_step = 2
+stopping_step = 10
+clip_grad_norm = None
+weight_decay = 0.0
+loss_decimal_place = 4
+
+Evaluation Hyper Parameters:
+eval_args = {'split': {'LS': 'valid_and_test'}, 'group_by': 'user', 'order': 'TO', 'mode': 'full'}
+metrics = ['Recall', 'NDCG']
+topk = [3, 5, 10, 20]
+valid_metric = Recall@10
+valid_metric_bigger = True
+eval_batch_size = 256
+metric_decimal_place = 4
+
+Dataset Hyper Parameters:
+field_separator = 	
+seq_separator =  
+USER_ID_FIELD = user_id
+ITEM_ID_FIELD = item_id
+RATING_FIELD = rating
+TIME_FIELD = timestamp
+seq_len = None
+LABEL_FIELD = label
+threshold = None
+NEG_PREFIX = neg_
+load_col = {'inter': ['user_id', 'item_id', 'rating', 'timestamp'], 'item': ['item_id', 'title', 'sales_rank', 'price', 'brand', 'categories', 'sales_type'], 'title': ['ent_id', 'ent_emb'], 'image': ['img_id', 'img_emb']}
+unload_col = None
+unused_col = None
+additional_feat_suffix = ['title', 'image']
+rm_dup_inter = None
+val_interval = None
+filter_inter_by_user_or_item = True
+user_inter_num_interval = [5,inf)
+item_inter_num_interval = [5,inf)
+alias_of_user_id = None
+alias_of_item_id = ['ent_id', 'img_id']
+alias_of_entity_id = None
+alias_of_relation_id = None
+preload_weight = {'ent_id': 'ent_emb', 'img_id': 'img_emb'}
+normalize_field = None
+normalize_all = None
+ITEM_LIST_LENGTH_FIELD = item_length
+LIST_SUFFIX = _list
+MAX_ITEM_LIST_LENGTH = 50
+POSITION_FIELD = position_id
+HEAD_ENTITY_ID_FIELD = head_id
+TAIL_ENTITY_ID_FIELD = tail_id
+RELATION_ID_FIELD = relation_id
+ENTITY_ID_FIELD = entity_id
+
+Other Hyper Parameters: 
+neg_sampling = None
+multi_gpus = False
+repeatable = True
+MODEL_TYPE = ModelType.SEQUENTIAL
+n_layers = 3
+n_heads = 8
+hidden_size = 256
+orig_attribute_hidden_size = [128, 128, 128]
+attribute_hidden_size = [128, 128, 128]
+inner_size = 256
+hidden_dropout_prob = 0.5
+attn_dropout_prob = 0.3
+hidden_act = gelu
+layer_norm_eps = 1e-12
+initializer_range = 0.02
+selected_features = ['ent_emb', 'img_emb', 'categories']
+feature_type = ['static', 'static', 'categorical']
+pooling_mode = sum
+loss_type = CE
+weight_sharing = not
+fusion_type = gate
+lamdas = [5, 5, 5]
+attribute_predictor = ['cos_sim', 'cos_sim', 'linear']
+diffusion = {'device': 'cuda', 'dims': [1000], 'emb_size': 20, 'mean_type': 'x0', 'noise_max': 0.02, 'noise_min': 0.0001, 'noise_scale': 0.1, 'noise_schedule': 'linear-var', 'norm': False, 'num_heads': 4, 'reweight': True, 'sampling_noise': False, 'sampling_steps': 0, 'steps': 5, 'structure': 'MLP', 'time_type': 'cat', 'hiddenSize': 128, 'inputSize': 128}
+lambda = 0.5
+wandb_run_name = titles_images_categories
+annealing = False
+MODEL_INPUT_TYPE = InputType.POINTWISE
+eval_type = EvaluatorType.RANKING
+device = cuda
+train_neg_sample_args = {'strategy': 'none'}
+eval_neg_sample_args = {'strategy': 'full', 'distribution': 'uniform'}
+
+
+Mon 19 Jan 2026 10:22:25 INFO  Amazon_Sports_and_Outdoors
+The number of users: 35599
+Average actions of users: 8.324540704533963
+The number of items: 18358
+Average actions of items: 16.142997221768262
+The number of inters: 296337
+The sparsity of the dataset: 99.95465569853714%
+Remain Fields: ['user_id', 'item_id', 'rating', 'timestamp', 'title', 'price', 'brand', 'categories', 'sales_type', 'sales_rank', 'ent_id', 'ent_emb', 'img_id', 'img_emb']
+Mon 19 Jan 2026 10:22:28 INFO  [Training]: train_batch_size = [1024] negative sampling: [None]
+Mon 19 Jan 2026 10:22:28 INFO  [Evaluation]: eval_batch_size = [256] eval_args: [{'split': {'LS': 'valid_and_test'}, 'group_by': 'user', 'order': 'TO', 'mode': 'full'}]
+Mon 19 Jan 2026 10:22:30 INFO  NOVA(
+  (item_embedding): Embedding(18358, 256, padding_idx=0)
+  (position_embedding): Embedding(50, 256)
+  (feature_embed_layer_list): ModuleList(
+    (0-1): 2 x Embedding(18358, 128)
+    (2): FeatureSeqEmbLayer()
+  )
+  (trm_encoder): NOVATransformerEncoder(
+    (layer): ModuleList(
+      (0-2): 3 x NOVATransformerLayer(
+        (multi_head_attention): NOVAMultiHeadAttention(
+          (query): Linear(in_features=256, out_features=256, bias=True)
+          (key): Linear(in_features=256, out_features=256, bias=True)
+          (value): Linear(in_features=256, out_features=256, bias=True)
+          (attn_dropout): Dropout(p=0.3, inplace=False)
+          (dense): Linear(in_features=256, out_features=256, bias=True)
+          (LayerNorm): LayerNorm((256,), eps=1e-12, elementwise_affine=True)
+          (out_dropout): Dropout(p=0.5, inplace=False)
+        )
+        (feed_forward): FeedForward(
+          (dense_1): Linear(in_features=256, out_features=256, bias=True)
+          (dense_2): Linear(in_features=256, out_features=256, bias=True)
+          (LayerNorm): LayerNorm((256,), eps=1e-12, elementwise_affine=True)
+          (dropout): Dropout(p=0.5, inplace=False)
+        )
+      )
+    )
+  )
+  (concat_layer): Linear(in_features=640, out_features=256, bias=True)
+  (LayerNorm): LayerNorm((256,), eps=1e-12, elementwise_affine=True)
+  (dropout): Dropout(p=0.5, inplace=False)
+  (loss_fct): CrossEntropyLoss()
+)
+Trainable parameters: 6064384
+Mon 19 Jan 2026 10:22:49 INFO  epoch 0 training [time: 19.02s, train loss: 1772.2066]
+Mon 19 Jan 2026 10:23:08 INFO  epoch 1 training [time: 18.80s, train loss: 1717.0090]
+Mon 19 Jan 2026 10:23:10 INFO  epoch 1 evaluating [time: 1.38s, valid_score: 0.017400]
+Mon 19 Jan 2026 10:23:10 INFO  valid result: 
+recall@3 : 0.0075    recall@5 : 0.0108    recall@10 : 0.0174    recall@20 : 0.0314    ndcg@3 : 0.0056    ndcg@5 : 0.0069    ndcg@10 : 0.009    ndcg@20 : 0.0125    
+Mon 19 Jan 2026 10:23:11 INFO  Saving current best: saved/NOVA-Jan-19-2026_10-22-30.pth
+Mon 19 Jan 2026 10:23:30 INFO  epoch 2 training [time: 18.71s, train loss: 1687.3743]
+Mon 19 Jan 2026 10:23:48 INFO  epoch 3 training [time: 18.60s, train loss: 1658.8818]
+Mon 19 Jan 2026 10:23:49 INFO  epoch 3 evaluating [time: 1.32s, valid_score: 0.023100]
+Mon 19 Jan 2026 10:23:49 INFO  valid result: 
+recall@3 : 0.0093    recall@5 : 0.013    recall@10 : 0.0231    recall@20 : 0.0412    ndcg@3 : 0.007    ndcg@5 : 0.0085    ndcg@10 : 0.0117    ndcg@20 : 0.0163    
+Mon 19 Jan 2026 10:23:51 INFO  Saving current best: saved/NOVA-Jan-19-2026_10-22-30.pth
+Mon 19 Jan 2026 10:24:09 INFO  epoch 4 training [time: 18.79s, train loss: 1637.7450]
+Mon 19 Jan 2026 10:24:28 INFO  epoch 5 training [time: 18.52s, train loss: 1620.8546]
+Mon 19 Jan 2026 10:24:29 INFO  epoch 5 evaluating [time: 1.38s, valid_score: 0.027200]
+Mon 19 Jan 2026 10:24:29 INFO  valid result: 
+recall@3 : 0.0104    recall@5 : 0.0157    recall@10 : 0.0272    recall@20 : 0.0464    ndcg@3 : 0.0076    ndcg@5 : 0.0097    ndcg@10 : 0.0134    ndcg@20 : 0.0182    
+Mon 19 Jan 2026 10:24:30 INFO  Saving current best: saved/NOVA-Jan-19-2026_10-22-30.pth
+Mon 19 Jan 2026 10:24:49 INFO  epoch 6 training [time: 18.71s, train loss: 1606.7887]
+Mon 19 Jan 2026 10:25:08 INFO  epoch 7 training [time: 18.74s, train loss: 1593.7167]
+Mon 19 Jan 2026 10:25:09 INFO  epoch 7 evaluating [time: 1.33s, valid_score: 0.031500]
+Mon 19 Jan 2026 10:25:09 INFO  valid result: 
+recall@3 : 0.0117    recall@5 : 0.0178    recall@10 : 0.0315    recall@20 : 0.0501    ndcg@3 : 0.0088    ndcg@5 : 0.0112    ndcg@10 : 0.0156    ndcg@20 : 0.0203    
+Mon 19 Jan 2026 10:25:10 INFO  Saving current best: saved/NOVA-Jan-19-2026_10-22-30.pth
+Mon 19 Jan 2026 10:25:29 INFO  epoch 8 training [time: 18.60s, train loss: 1581.6248]
+Mon 19 Jan 2026 10:25:48 INFO  epoch 9 training [time: 18.87s, train loss: 1569.8063]
+Mon 19 Jan 2026 10:25:49 INFO  epoch 9 evaluating [time: 1.33s, valid_score: 0.033900]
+Mon 19 Jan 2026 10:25:49 INFO  valid result: 
+recall@3 : 0.013    recall@5 : 0.0199    recall@10 : 0.0339    recall@20 : 0.0536    ndcg@3 : 0.0096    ndcg@5 : 0.0124    ndcg@10 : 0.0169    ndcg@20 : 0.0219    
+Mon 19 Jan 2026 10:25:50 INFO  Saving current best: saved/NOVA-Jan-19-2026_10-22-30.pth
+Mon 19 Jan 2026 10:26:09 INFO  epoch 10 training [time: 18.74s, train loss: 1558.9081]
+Mon 19 Jan 2026 10:26:28 INFO  epoch 11 training [time: 18.69s, train loss: 1547.9293]
+Mon 19 Jan 2026 10:26:29 INFO  epoch 11 evaluating [time: 1.33s, valid_score: 0.036000]
+Mon 19 Jan 2026 10:26:29 INFO  valid result: 
+recall@3 : 0.0146    recall@5 : 0.0217    recall@10 : 0.036    recall@20 : 0.0576    ndcg@3 : 0.0107    ndcg@5 : 0.0136    ndcg@10 : 0.0182    ndcg@20 : 0.0236    
+Mon 19 Jan 2026 10:26:30 INFO  Saving current best: saved/NOVA-Jan-19-2026_10-22-30.pth
+Mon 19 Jan 2026 10:26:49 INFO  epoch 12 training [time: 18.86s, train loss: 1537.5988]
+Mon 19 Jan 2026 10:27:08 INFO  epoch 13 training [time: 18.60s, train loss: 1527.2993]
+Mon 19 Jan 2026 10:27:09 INFO  epoch 13 evaluating [time: 1.36s, valid_score: 0.038700]
+Mon 19 Jan 2026 10:27:09 INFO  valid result: 
+recall@3 : 0.0161    recall@5 : 0.0233    recall@10 : 0.0387    recall@20 : 0.0605    ndcg@3 : 0.0118    ndcg@5 : 0.0148    ndcg@10 : 0.0197    ndcg@20 : 0.0252    
+Mon 19 Jan 2026 10:27:10 INFO  Saving current best: saved/NOVA-Jan-19-2026_10-22-30.pth
+Mon 19 Jan 2026 10:27:29 INFO  epoch 14 training [time: 18.74s, train loss: 1516.8091]
+Mon 19 Jan 2026 10:27:48 INFO  epoch 15 training [time: 18.70s, train loss: 1507.1592]
+Mon 19 Jan 2026 10:27:49 INFO  epoch 15 evaluating [time: 1.34s, valid_score: 0.041000]
+Mon 19 Jan 2026 10:27:49 INFO  valid result: 
+recall@3 : 0.0173    recall@5 : 0.0251    recall@10 : 0.041    recall@20 : 0.0642    ndcg@3 : 0.013    ndcg@5 : 0.0162    ndcg@10 : 0.0213    ndcg@20 : 0.0271    
+Mon 19 Jan 2026 10:27:50 INFO  Saving current best: saved/NOVA-Jan-19-2026_10-22-30.pth
+Mon 19 Jan 2026 10:28:09 INFO  epoch 16 training [time: 18.56s, train loss: 1497.3055]
+Mon 19 Jan 2026 10:28:28 INFO  epoch 17 training [time: 18.80s, train loss: 1488.3498]
+Mon 19 Jan 2026 10:28:29 INFO  epoch 17 evaluating [time: 1.32s, valid_score: 0.043700]
+Mon 19 Jan 2026 10:28:29 INFO  valid result: 
+recall@3 : 0.0188    recall@5 : 0.0274    recall@10 : 0.0437    recall@20 : 0.0669    ndcg@3 : 0.0139    ndcg@5 : 0.0175    ndcg@10 : 0.0227    ndcg@20 : 0.0285    
+Mon 19 Jan 2026 10:28:30 INFO  Saving current best: saved/NOVA-Jan-19-2026_10-22-30.pth
+Mon 19 Jan 2026 10:28:49 INFO  epoch 18 training [time: 18.65s, train loss: 1478.7531]
+Mon 19 Jan 2026 10:29:07 INFO  epoch 19 training [time: 18.70s, train loss: 1469.8674]
+Mon 19 Jan 2026 10:29:09 INFO  epoch 19 evaluating [time: 1.33s, valid_score: 0.046400]
+Mon 19 Jan 2026 10:29:09 INFO  valid result: 
+recall@3 : 0.0197    recall@5 : 0.0292    recall@10 : 0.0464    recall@20 : 0.0697    ndcg@3 : 0.0148    ndcg@5 : 0.0187    ndcg@10 : 0.0242    ndcg@20 : 0.03    
+Mon 19 Jan 2026 10:29:10 INFO  Saving current best: saved/NOVA-Jan-19-2026_10-22-30.pth
+Mon 19 Jan 2026 10:29:29 INFO  epoch 20 training [time: 18.80s, train loss: 1460.9184]
+Mon 19 Jan 2026 10:29:47 INFO  epoch 21 training [time: 18.62s, train loss: 1452.4319]
+Mon 19 Jan 2026 10:29:49 INFO  epoch 21 evaluating [time: 1.31s, valid_score: 0.047500]
+Mon 19 Jan 2026 10:29:49 INFO  valid result: 
+recall@3 : 0.0211    recall@5 : 0.03    recall@10 : 0.0475    recall@20 : 0.0709    ndcg@3 : 0.0158    ndcg@5 : 0.0194    ndcg@10 : 0.0251    ndcg@20 : 0.0309    
+Mon 19 Jan 2026 10:29:50 INFO  Saving current best: saved/NOVA-Jan-19-2026_10-22-30.pth
+Mon 19 Jan 2026 10:30:09 INFO  epoch 22 training [time: 18.92s, train loss: 1443.7617]
+Mon 19 Jan 2026 10:30:27 INFO  epoch 23 training [time: 18.77s, train loss: 1435.2927]
+Mon 19 Jan 2026 10:30:29 INFO  epoch 23 evaluating [time: 1.35s, valid_score: 0.048200]
+Mon 19 Jan 2026 10:30:29 INFO  valid result: 
+recall@3 : 0.022    recall@5 : 0.0316    recall@10 : 0.0482    recall@20 : 0.0712    ndcg@3 : 0.0164    ndcg@5 : 0.0204    ndcg@10 : 0.0257    ndcg@20 : 0.0315    
+Mon 19 Jan 2026 10:30:30 INFO  Saving current best: saved/NOVA-Jan-19-2026_10-22-30.pth
+Mon 19 Jan 2026 10:30:49 INFO  epoch 24 training [time: 18.73s, train loss: 1427.2781]
+Mon 19 Jan 2026 10:31:07 INFO  epoch 25 training [time: 18.88s, train loss: 1419.4138]
+Mon 19 Jan 2026 10:31:09 INFO  epoch 25 evaluating [time: 1.41s, valid_score: 0.050000]
+Mon 19 Jan 2026 10:31:09 INFO  valid result: 
+recall@3 : 0.0228    recall@5 : 0.0329    recall@10 : 0.05    recall@20 : 0.073    ndcg@3 : 0.0171    ndcg@5 : 0.0213    ndcg@10 : 0.0267    ndcg@20 : 0.0325    
+Mon 19 Jan 2026 10:31:10 INFO  Saving current best: saved/NOVA-Jan-19-2026_10-22-30.pth
+Mon 19 Jan 2026 10:31:29 INFO  epoch 26 training [time: 18.66s, train loss: 1411.1021]
+Mon 19 Jan 2026 10:31:47 INFO  epoch 27 training [time: 18.82s, train loss: 1403.0901]
+Mon 19 Jan 2026 10:31:49 INFO  epoch 27 evaluating [time: 1.31s, valid_score: 0.050900]
+Mon 19 Jan 2026 10:31:49 INFO  valid result: 
+recall@3 : 0.0231    recall@5 : 0.0334    recall@10 : 0.0509    recall@20 : 0.0744    ndcg@3 : 0.0175    ndcg@5 : 0.0217    ndcg@10 : 0.0273    ndcg@20 : 0.0332    
+Mon 19 Jan 2026 10:31:50 INFO  Saving current best: saved/NOVA-Jan-19-2026_10-22-30.pth
+Mon 19 Jan 2026 10:32:09 INFO  epoch 28 training [time: 18.86s, train loss: 1395.5478]
+Mon 19 Jan 2026 10:32:27 INFO  epoch 29 training [time: 18.70s, train loss: 1388.1704]
+Mon 19 Jan 2026 10:32:29 INFO  epoch 29 evaluating [time: 1.31s, valid_score: 0.051000]
+Mon 19 Jan 2026 10:32:29 INFO  valid result: 
+recall@3 : 0.0235    recall@5 : 0.0336    recall@10 : 0.051    recall@20 : 0.0747    ndcg@3 : 0.0179    ndcg@5 : 0.022    ndcg@10 : 0.0276    ndcg@20 : 0.0336    
+Mon 19 Jan 2026 10:32:30 INFO  Saving current best: saved/NOVA-Jan-19-2026_10-22-30.pth
+Mon 19 Jan 2026 10:32:49 INFO  epoch 30 training [time: 18.94s, train loss: 1380.7402]
+Mon 19 Jan 2026 10:33:08 INFO  epoch 31 training [time: 18.80s, train loss: 1373.9232]
+Mon 19 Jan 2026 10:33:09 INFO  epoch 31 evaluating [time: 1.36s, valid_score: 0.050900]
+Mon 19 Jan 2026 10:33:09 INFO  valid result: 
+recall@3 : 0.0235    recall@5 : 0.0335    recall@10 : 0.0509    recall@20 : 0.0753    ndcg@3 : 0.0176    ndcg@5 : 0.0217    ndcg@10 : 0.0274    ndcg@20 : 0.0335    
+Mon 19 Jan 2026 10:33:28 INFO  epoch 32 training [time: 18.80s, train loss: 1366.2807]
+Mon 19 Jan 2026 10:33:47 INFO  epoch 33 training [time: 18.90s, train loss: 1359.0869]
+Mon 19 Jan 2026 10:33:48 INFO  epoch 33 evaluating [time: 1.34s, valid_score: 0.052000]
+Mon 19 Jan 2026 10:33:48 INFO  valid result: 
+recall@3 : 0.0246    recall@5 : 0.0341    recall@10 : 0.052    recall@20 : 0.0763    ndcg@3 : 0.0187    ndcg@5 : 0.0226    ndcg@10 : 0.0283    ndcg@20 : 0.0344    
+Mon 19 Jan 2026 10:33:49 INFO  Saving current best: saved/NOVA-Jan-19-2026_10-22-30.pth
+Mon 19 Jan 2026 10:34:08 INFO  epoch 34 training [time: 18.65s, train loss: 1351.8632]
+Mon 19 Jan 2026 10:34:27 INFO  epoch 35 training [time: 18.85s, train loss: 1345.2339]
+Mon 19 Jan 2026 10:34:28 INFO  epoch 35 evaluating [time: 1.32s, valid_score: 0.052500]
+Mon 19 Jan 2026 10:34:28 INFO  valid result: 
+recall@3 : 0.0245    recall@5 : 0.0348    recall@10 : 0.0525    recall@20 : 0.0772    ndcg@3 : 0.0186    ndcg@5 : 0.0228    ndcg@10 : 0.0285    ndcg@20 : 0.0347    
+Mon 19 Jan 2026 10:34:29 INFO  Saving current best: saved/NOVA-Jan-19-2026_10-22-30.pth
+Mon 19 Jan 2026 10:34:48 INFO  epoch 36 training [time: 18.82s, train loss: 1339.0527]
+Mon 19 Jan 2026 10:35:07 INFO  epoch 37 training [time: 18.65s, train loss: 1332.2318]
+Mon 19 Jan 2026 10:35:08 INFO  epoch 37 evaluating [time: 1.32s, valid_score: 0.053000]
+Mon 19 Jan 2026 10:35:08 INFO  valid result: 
+recall@3 : 0.0246    recall@5 : 0.0349    recall@10 : 0.053    recall@20 : 0.0776    ndcg@3 : 0.0189    ndcg@5 : 0.0231    ndcg@10 : 0.029    ndcg@20 : 0.0351    
+Mon 19 Jan 2026 10:35:09 INFO  Saving current best: saved/NOVA-Jan-19-2026_10-22-30.pth
+Mon 19 Jan 2026 10:35:28 INFO  epoch 38 training [time: 18.86s, train loss: 1325.3990]
+Mon 19 Jan 2026 10:35:47 INFO  epoch 39 training [time: 18.70s, train loss: 1318.8958]
+Mon 19 Jan 2026 10:35:48 INFO  epoch 39 evaluating [time: 1.34s, valid_score: 0.052600]
+Mon 19 Jan 2026 10:35:48 INFO  valid result: 
+recall@3 : 0.0251    recall@5 : 0.0346    recall@10 : 0.0526    recall@20 : 0.0768    ndcg@3 : 0.0193    ndcg@5 : 0.0231    ndcg@10 : 0.029    ndcg@20 : 0.035    
+Mon 19 Jan 2026 10:36:07 INFO  epoch 40 training [time: 18.75s, train loss: 1311.9244]
+Mon 19 Jan 2026 10:36:26 INFO  epoch 41 training [time: 18.85s, train loss: 1306.3431]
+Mon 19 Jan 2026 10:36:27 INFO  epoch 41 evaluating [time: 1.35s, valid_score: 0.053000]
+Mon 19 Jan 2026 10:36:27 INFO  valid result: 
+recall@3 : 0.0256    recall@5 : 0.0353    recall@10 : 0.053    recall@20 : 0.0772    ndcg@3 : 0.0197    ndcg@5 : 0.0237    ndcg@10 : 0.0294    ndcg@20 : 0.0355    
+Mon 19 Jan 2026 10:36:46 INFO  epoch 42 training [time: 18.68s, train loss: 1300.1773]
+Mon 19 Jan 2026 10:37:05 INFO  epoch 43 training [time: 18.93s, train loss: 1293.7721]
+Mon 19 Jan 2026 10:37:06 INFO  epoch 43 evaluating [time: 1.31s, valid_score: 0.052800]
+Mon 19 Jan 2026 10:37:06 INFO  valid result: 
+recall@3 : 0.0258    recall@5 : 0.0354    recall@10 : 0.0528    recall@20 : 0.0768    ndcg@3 : 0.0198    ndcg@5 : 0.0237    ndcg@10 : 0.0293    ndcg@20 : 0.0354    
+Mon 19 Jan 2026 10:37:25 INFO  epoch 44 training [time: 18.77s, train loss: 1288.2148]
+Mon 19 Jan 2026 10:37:44 INFO  epoch 45 training [time: 18.82s, train loss: 1282.1321]
+Mon 19 Jan 2026 10:37:45 INFO  epoch 45 evaluating [time: 1.36s, valid_score: 0.052600]
+Mon 19 Jan 2026 10:37:45 INFO  valid result: 
+recall@3 : 0.0257    recall@5 : 0.0356    recall@10 : 0.0526    recall@20 : 0.0763    ndcg@3 : 0.0197    ndcg@5 : 0.0238    ndcg@10 : 0.0293    ndcg@20 : 0.0352    
+Mon 19 Jan 2026 10:38:04 INFO  epoch 46 training [time: 18.88s, train loss: 1275.9627]
+Mon 19 Jan 2026 10:38:22 INFO  epoch 47 training [time: 18.65s, train loss: 1270.1271]
+Mon 19 Jan 2026 10:38:24 INFO  epoch 47 evaluating [time: 1.32s, valid_score: 0.052900]
+Mon 19 Jan 2026 10:38:24 INFO  valid result: 
+recall@3 : 0.0266    recall@5 : 0.0358    recall@10 : 0.0529    recall@20 : 0.0766    ndcg@3 : 0.0206    ndcg@5 : 0.0243    ndcg@10 : 0.0298    ndcg@20 : 0.0358    
+Mon 19 Jan 2026 10:38:43 INFO  epoch 48 training [time: 18.92s, train loss: 1264.4974]
+Mon 19 Jan 2026 10:39:01 INFO  epoch 49 training [time: 18.75s, train loss: 1259.2434]
+Mon 19 Jan 2026 10:39:03 INFO  epoch 49 evaluating [time: 1.35s, valid_score: 0.052600]
+Mon 19 Jan 2026 10:39:03 INFO  valid result: 
+recall@3 : 0.0262    recall@5 : 0.0356    recall@10 : 0.0526    recall@20 : 0.0773    ndcg@3 : 0.0205    ndcg@5 : 0.0244    ndcg@10 : 0.0298    ndcg@20 : 0.036    
+Mon 19 Jan 2026 10:39:21 INFO  epoch 50 training [time: 18.69s, train loss: 1253.5387]
+Mon 19 Jan 2026 10:39:40 INFO  epoch 51 training [time: 18.83s, train loss: 1248.1831]
+Mon 19 Jan 2026 10:39:42 INFO  epoch 51 evaluating [time: 1.35s, valid_score: 0.053400]
+Mon 19 Jan 2026 10:39:42 INFO  valid result: 
+recall@3 : 0.0257    recall@5 : 0.0357    recall@10 : 0.0534    recall@20 : 0.0771    ndcg@3 : 0.0203    ndcg@5 : 0.0244    ndcg@10 : 0.03    ndcg@20 : 0.036    
+Mon 19 Jan 2026 10:39:43 INFO  Saving current best: saved/NOVA-Jan-19-2026_10-22-30.pth
+Mon 19 Jan 2026 10:40:01 INFO  epoch 52 training [time: 18.62s, train loss: 1242.3104]
+Mon 19 Jan 2026 10:40:20 INFO  epoch 53 training [time: 18.86s, train loss: 1237.4592]
+Mon 19 Jan 2026 10:40:22 INFO  epoch 53 evaluating [time: 1.32s, valid_score: 0.051500]
+Mon 19 Jan 2026 10:40:22 INFO  valid result: 
+recall@3 : 0.026    recall@5 : 0.0349    recall@10 : 0.0515    recall@20 : 0.0758    ndcg@3 : 0.0205    ndcg@5 : 0.0241    ndcg@10 : 0.0294    ndcg@20 : 0.0355    
+Mon 19 Jan 2026 10:40:40 INFO  epoch 54 training [time: 18.76s, train loss: 1232.5990]
+Mon 19 Jan 2026 10:40:59 INFO  epoch 55 training [time: 18.66s, train loss: 1226.8029]
+Mon 19 Jan 2026 10:41:00 INFO  epoch 55 evaluating [time: 1.33s, valid_score: 0.051300]
+Mon 19 Jan 2026 10:41:00 INFO  valid result: 
+recall@3 : 0.0254    recall@5 : 0.0342    recall@10 : 0.0513    recall@20 : 0.0755    ndcg@3 : 0.0201    ndcg@5 : 0.0237    ndcg@10 : 0.0292    ndcg@20 : 0.0352    
+Mon 19 Jan 2026 10:41:19 INFO  epoch 56 training [time: 18.90s, train loss: 1221.2039]
+Mon 19 Jan 2026 10:41:38 INFO  epoch 57 training [time: 18.62s, train loss: 1216.8363]
+Mon 19 Jan 2026 10:41:39 INFO  epoch 57 evaluating [time: 1.34s, valid_score: 0.051500]
+Mon 19 Jan 2026 10:41:39 INFO  valid result: 
+recall@3 : 0.0253    recall@5 : 0.0347    recall@10 : 0.0515    recall@20 : 0.0749    ndcg@3 : 0.0201    ndcg@5 : 0.024    ndcg@10 : 0.0294    ndcg@20 : 0.0353    
+Mon 19 Jan 2026 10:41:58 INFO  epoch 58 training [time: 18.84s, train loss: 1211.2335]
+Mon 19 Jan 2026 10:42:17 INFO  epoch 59 training [time: 18.74s, train loss: 1206.2368]
+Mon 19 Jan 2026 10:42:18 INFO  epoch 59 evaluating [time: 1.35s, valid_score: 0.050700]
+Mon 19 Jan 2026 10:42:18 INFO  valid result: 
+recall@3 : 0.0255    recall@5 : 0.034    recall@10 : 0.0507    recall@20 : 0.0742    ndcg@3 : 0.0202    ndcg@5 : 0.0237    ndcg@10 : 0.029    ndcg@20 : 0.0349    
+Mon 19 Jan 2026 10:42:37 INFO  epoch 60 training [time: 18.71s, train loss: 1201.0145]
+Mon 19 Jan 2026 10:42:56 INFO  epoch 61 training [time: 18.87s, train loss: 1196.3505]
+Mon 19 Jan 2026 10:42:57 INFO  epoch 61 evaluating [time: 1.32s, valid_score: 0.050700]
+Mon 19 Jan 2026 10:42:57 INFO  valid result: 
+recall@3 : 0.0257    recall@5 : 0.0346    recall@10 : 0.0507    recall@20 : 0.0743    ndcg@3 : 0.0205    ndcg@5 : 0.0241    ndcg@10 : 0.0293    ndcg@20 : 0.0352    
+Mon 19 Jan 2026 10:43:16 INFO  epoch 62 training [time: 18.65s, train loss: 1191.4361]
+Mon 19 Jan 2026 10:43:35 INFO  epoch 63 training [time: 18.91s, train loss: 1185.9338]
+Mon 19 Jan 2026 10:43:36 INFO  epoch 63 evaluating [time: 1.35s, valid_score: 0.050800]
+Mon 19 Jan 2026 10:43:36 INFO  valid result: 
+recall@3 : 0.0257    recall@5 : 0.0355    recall@10 : 0.0508    recall@20 : 0.0745    ndcg@3 : 0.0204    ndcg@5 : 0.0244    ndcg@10 : 0.0293    ndcg@20 : 0.0353    
+Mon 19 Jan 2026 10:43:55 INFO  epoch 64 training [time: 18.91s, train loss: 1181.0951]
+Mon 19 Jan 2026 10:44:14 INFO  epoch 65 training [time: 18.77s, train loss: 1176.0822]
+Mon 19 Jan 2026 10:44:15 INFO  epoch 65 evaluating [time: 1.32s, valid_score: 0.050500]
+Mon 19 Jan 2026 10:44:15 INFO  valid result: 
+recall@3 : 0.0256    recall@5 : 0.0338    recall@10 : 0.0505    recall@20 : 0.0739    ndcg@3 : 0.0203    ndcg@5 : 0.0236    ndcg@10 : 0.029    ndcg@20 : 0.0349    
+Mon 19 Jan 2026 10:44:34 INFO  epoch 66 training [time: 18.92s, train loss: 1171.1076]
+Mon 19 Jan 2026 10:44:52 INFO  epoch 67 training [time: 18.62s, train loss: 1166.5101]
+Mon 19 Jan 2026 10:44:54 INFO  epoch 67 evaluating [time: 1.37s, valid_score: 0.050400]
+Mon 19 Jan 2026 10:44:54 INFO  valid result: 
+recall@3 : 0.0253    recall@5 : 0.0343    recall@10 : 0.0504    recall@20 : 0.0734    ndcg@3 : 0.0201    ndcg@5 : 0.0238    ndcg@10 : 0.029    ndcg@20 : 0.0347    
+Mon 19 Jan 2026 10:45:13 INFO  epoch 68 training [time: 18.84s, train loss: 1161.7320]
+Mon 19 Jan 2026 10:45:31 INFO  epoch 69 training [time: 18.79s, train loss: 1157.5607]
+Mon 19 Jan 2026 10:45:33 INFO  epoch 69 evaluating [time: 1.33s, valid_score: 0.049300]
+Mon 19 Jan 2026 10:45:33 INFO  valid result: 
+recall@3 : 0.0253    recall@5 : 0.0337    recall@10 : 0.0493    recall@20 : 0.0717    ndcg@3 : 0.02    ndcg@5 : 0.0235    ndcg@10 : 0.0285    ndcg@20 : 0.0342    
+Mon 19 Jan 2026 10:45:52 INFO  epoch 70 training [time: 18.76s, train loss: 1152.1587]
+Mon 19 Jan 2026 10:46:10 INFO  epoch 71 training [time: 18.87s, train loss: 1147.0973]
+Mon 19 Jan 2026 10:46:12 INFO  epoch 71 evaluating [time: 1.32s, valid_score: 0.048900]
+Mon 19 Jan 2026 10:46:12 INFO  valid result: 
+recall@3 : 0.0253    recall@5 : 0.0337    recall@10 : 0.0489    recall@20 : 0.0709    ndcg@3 : 0.02    ndcg@5 : 0.0235    ndcg@10 : 0.0284    ndcg@20 : 0.0339    
+Mon 19 Jan 2026 10:46:30 INFO  epoch 72 training [time: 18.66s, train loss: 1142.3673]
+Mon 19 Jan 2026 10:46:49 INFO  epoch 73 training [time: 18.90s, train loss: 1137.5481]
+Mon 19 Jan 2026 10:46:51 INFO  epoch 73 evaluating [time: 1.31s, valid_score: 0.049600]
+Mon 19 Jan 2026 10:46:51 INFO  valid result: 
+recall@3 : 0.0249    recall@5 : 0.0336    recall@10 : 0.0496    recall@20 : 0.0704    ndcg@3 : 0.02    ndcg@5 : 0.0235    ndcg@10 : 0.0287    ndcg@20 : 0.0339    
+Mon 19 Jan 2026 10:46:51 INFO  Finished training, best eval result in epoch 51
+Mon 19 Jan 2026 10:46:51 INFO  Loading model structure and parameters from saved/NOVA-Jan-19-2026_10-22-30.pth
+Mon 19 Jan 2026 10:46:53 INFO  best valid : {'recall@3': np.float64(0.0257), 'recall@5': np.float64(0.0357), 'recall@10': np.float64(0.0534), 'recall@20': np.float64(0.0771), 'ndcg@3': np.float64(0.0203), 'ndcg@5': np.float64(0.0244), 'ndcg@10': np.float64(0.03), 'ndcg@20': np.float64(0.036)}
+Mon 19 Jan 2026 10:46:53 INFO  test result: {'recall@3': np.float64(0.0202), 'recall@5': np.float64(0.0272), 'recall@10': np.float64(0.0422), 'recall@20': np.float64(0.0627), 'ndcg@3': np.float64(0.0155), 'ndcg@5': np.float64(0.0184), 'ndcg@10': np.float64(0.0232), 'ndcg@20': np.float64(0.0283)}

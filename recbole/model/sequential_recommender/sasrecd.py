@@ -46,7 +46,7 @@ class MLP(nn.Module):
         self.to(device)
     
     def forward(self, X):
-        noise = torch.randn_like(X) * 0.01
+        noise = torch.randn_like(X) * 0.05
 
         noisy_res = self.net(X + noise)
         # res = self.net(X)

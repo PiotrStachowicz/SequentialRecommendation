@@ -13,11 +13,45 @@ from torch import nn
 import numpy as np
 import copy
 import wandb
+import math
 
 from recbole.model.abstract_recommender import SequentialRecommender
 from recbole.model.layers import NOVATransformerEncoder, FeatureSeqEmbLayer
 from recbole.model.loss import BPRLoss
 from recbole.model.denoising import GaussianDiffusion
+
+
+class MLP(nn.Module):
+    def __init__(self, input_dim=4096, output_dim=128, dropout=0.1, device='cuda'):
+        super().__init__()
+
+        inp_power = int(math.log2(input_dim))
+        out_power = int(math.log2(output_dim))
+
+        last_power = out_power + 1
+
+        module_list = []
+        for power in range(inp_power, out_power + 1, -1):
+            module_list.append(nn.Linear(in_features=2**power, out_features=2**(power-1)))
+            module_list.append(nn.ReLU())
+            module_list.append(nn.Dropout(dropout))
+
+        module_list.append(nn.Linear(in_features=2**last_power, out_features=output_dim))
+        module_list.append(nn.LayerNorm(output_dim))
+
+        self.net = nn.Sequential(*module_list)
+        self.to(device)
+    
+    def forward(self, X):
+        # noise = torch.randn_like(X) * 0.01
+
+        # noisy_res = self.net(X + noise)
+        res = self.net(X)
+        
+        # # MSE error for consistency
+        # self.consistency_loss = torch.mean((noisy_res - res) ** 2)
+
+        return res
 
 
 class NOVA_Denoising(SequentialRecommender):
@@ -34,6 +68,7 @@ class NOVA_Denoising(SequentialRecommender):
         self.hidden_size = config['hidden_size']  # same as embedding_size
         self.inner_size = config['inner_size']  # the dimensionality in feed-forward layer
         self.attribute_hidden_size = config['attribute_hidden_size']
+        self.orig_attribute_hidden_size = config['orig_attribute_hidden_size']
         self.hidden_dropout_prob = config['hidden_dropout_prob']
         self.attn_dropout_prob = config['attn_dropout_prob']
         self.hidden_act = config['hidden_act']
@@ -64,17 +99,23 @@ class NOVA_Denoising(SequentialRecommender):
             feature_type = self.feature_type[i]
 
             if feature_type == 'static':
-                layer_list.append(
-                    nn.Embedding.from_pretrained(
-                        torch.from_numpy(
-                            dataset.get_preload_weight(
-                                list(dataset.config['preload_weight'].keys())[i]
-                            ).astype(np.float32)
-                        )
+                feature_dim = self.orig_attribute_hidden_size[i]
+                emb_layer = nn.Embedding.from_pretrained(
+                    torch.from_numpy(
+                        dataset.get_preload_weight(
+                            f"{feature.split('_')[0]}_id"
+                        ).astype(np.float32)
                     )
                 )
+                emb_layer.original_weight = emb_layer.weight.detach().clone().to(self.device)
+                emb_layer.mlp = MLP(
+                    input_dim=feature_dim, 
+                    output_dim=self.attribute_hidden_size[i], 
+                    device=self.device
+                )
+                layer_list.append(emb_layer)
                 diffusion.append(GaussianDiffusion(
-                    config['diffusion']))  # przekazanie argumentów do dyfuzji, TODO: znaleźć domyślne wartości
+                    config['diffusion']))
             elif feature_type == 'categorical':
                 layer_list.append(
                     copy.deepcopy(
@@ -166,8 +207,9 @@ class NOVA_Denoising(SequentialRecommender):
         for i, feature_embed_layer in enumerate(self.feature_embed_layer_list):
             if self.feature_type[i] == 'static':
                 static_embedding = feature_embed_layer(item_seq)
-                static_embedding, loss_denoising = self.diffusion[i](static_embedding)
-                feature_table.append(static_embedding.unsqueeze(-2))
+                reduced_embedding = feature_embed_layer.mlp(static_embedding)
+                reduced_embedding, loss_denoising = self.diffusion[i](reduced_embedding)
+                feature_table.append(reduced_embedding.unsqueeze(-2))
                 loss_denoising_ += loss_denoising
             elif self.feature_type[i] == 'categorical':
                 sparse_embedding, dense_embedding = feature_embed_layer(None, item_seq)
@@ -201,7 +243,6 @@ class NOVA_Denoising(SequentialRecommender):
         item_seq = interaction[self.ITEM_SEQ]
         item_seq_len = interaction[self.ITEM_SEQ_LEN]
         seq_output, loss_denoising_ = self.forward(item_seq, item_seq_len)
-        wandb.log({'denoise_loss': loss_denoising_})
         pos_items = interaction[self.POS_ITEM_ID]
         if self.loss_type == 'BPR':
             neg_items = interaction[self.NEG_ITEM_ID]
@@ -214,7 +255,13 @@ class NOVA_Denoising(SequentialRecommender):
             test_item_emb = self.item_embedding.weight
             logits = torch.matmul(seq_output, test_item_emb.transpose(0, 1))
             loss = self.loss_fct(logits, pos_items)
-        wandb.log({'total_loss': loss + self.l * loss_denoising_.sum()})
+
+        wandb.log({
+            'total_loss': loss + self.l * loss_denoising_.sum(),
+            'denoise_loss': loss_denoising_,
+            'item_loss': loss
+        })
+
         return loss + loss_denoising_.sum() * self.l
 
     def predict(self, interaction):
