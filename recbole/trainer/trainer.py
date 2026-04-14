@@ -488,7 +488,7 @@ class Trainer(AbstractTrainer):
                 checkpoint_file = model_file
             else:
                 checkpoint_file = self.saved_model_file
-            checkpoint = torch.load(checkpoint_file)
+            checkpoint = torch.load(checkpoint_file, weights_only=False)
             self.model.load_state_dict(checkpoint['state_dict'])
             self.model.load_other_parameter(checkpoint.get('other_parameter'))
             message_output = 'Loading model structure and parameters from {}'.format(checkpoint_file)

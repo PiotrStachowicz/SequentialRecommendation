@@ -14,8 +14,8 @@ save_dataloaders: False
 additional_feat_suffix: [title]
 load_col:
     inter: [user_id, item_id, rating, timestamp]
-    item: [item_id, categories]
-    title: [ent_id, ent_emb]
+    item: ['item_id','title','sales_rank','price','brand','categories','sales_type']
+    title: ['ent_id', 'ent_emb']
 alias_of_item_id: [ent_id]
 preload_weight:
     ent_id: ent_emb
@@ -35,7 +35,8 @@ item_inter_num_interval: "[5,inf)"
 n_layers: 3
 n_heads: 8
 hidden_size: 256
-attribute_hidden_size: [128, 128]
+orig_attribute_hidden_size: [128, 64]
+attribute_hidden_size: [128, 64]
 inner_size: 256
 hidden_dropout_prob: 0.5
 attn_dropout_prob: 0.3
@@ -50,9 +51,32 @@ weight_sharing: 'not'
 fusion_type: 'gate'
 lamdas: [5, 5]
 attribute_predictor: ['cos_sim', 'linear']
+diffusion:
+  device: cuda
+  dims: [1000]
+  emb_size: 20
+  mean_type: x0
+  noise_max: 0.02
+  noise_min: 0.0001
+  noise_scale: 0.1
+  noise_schedule: linear-var
+  norm: false
+  num_heads: 4
+  reweight: true
+  sampling_noise: false
+  sampling_steps: 0
+  steps: 5
+  structure: MLP
+  time_type: cat
+  hiddenSize: 128
+  inputSize: 128
+
+lambda: 0.5
+
 
 # training settings
-epochs: 40
+wandb_run_name: 'titles_categories_obrazek'
+epochs: 200
 train_batch_size: 1024
 learner: adam
 learning_rate: 0.0001
@@ -61,6 +85,7 @@ stopping_step: 10
 clip_grad_norm: ~
 weight_decay: 0.0
 neg_sampling:
+annealing: False
 
 # evaluation settings
 eval_args:
@@ -72,7 +97,7 @@ eval_args:
 repeatable: True
 metrics: ["Recall","NDCG"]
 topk: [3,5,10,20]
-valid_metric: Recall@20
+valid_metric: Recall@10
 valid_metric_bigger: True
 eval_batch_size: 256
 loss_decimal_place: 4

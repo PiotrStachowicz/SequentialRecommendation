@@ -1,0 +1,358 @@
+Fri 28 Nov 2025 01:48:42 INFO  
+General Hyper Parameters:
+gpu_id = 0
+use_gpu = True
+seed = 212
+state = INFO
+reproducibility = True
+data_path = ./recbole/data/dataset/Amazon_Sports_and_Outdoors
+show_progress = True
+save_dataset = False
+save_dataloaders = False
+benchmark_filename = None
+
+Training Hyper Parameters:
+checkpoint_dir = saved
+epochs = 200
+train_batch_size = 1024
+learner = adam
+learning_rate = 0.0001
+eval_step = 2
+stopping_step = 10
+clip_grad_norm = None
+weight_decay = 0.0
+loss_decimal_place = 4
+
+Evaluation Hyper Parameters:
+eval_args = {'split': {'LS': 'valid_and_test'}, 'group_by': 'user', 'order': 'TO', 'mode': 'full'}
+metrics = ['Recall', 'NDCG']
+topk = [3, 5, 10, 20]
+valid_metric = Recall@10
+valid_metric_bigger = True
+eval_batch_size = 256
+metric_decimal_place = 4
+
+Dataset Hyper Parameters:
+field_separator = 	
+seq_separator =  
+USER_ID_FIELD = user_id
+ITEM_ID_FIELD = item_id
+RATING_FIELD = rating
+TIME_FIELD = timestamp
+seq_len = None
+LABEL_FIELD = label
+threshold = None
+NEG_PREFIX = neg_
+load_col = {'inter': ['user_id', 'item_id', 'rating', 'timestamp'], 'item': ['item_id', 'title', 'sales_rank', 'price', 'brand', 'categories', 'sales_type'], 'image_original': ['img_id', 'img_emb']}
+unload_col = None
+unused_col = None
+additional_feat_suffix = ['image_original']
+rm_dup_inter = None
+val_interval = None
+filter_inter_by_user_or_item = True
+user_inter_num_interval = [5,inf)
+item_inter_num_interval = [5,inf)
+alias_of_user_id = None
+alias_of_item_id = ['img_id']
+alias_of_entity_id = None
+alias_of_relation_id = None
+preload_weight = {'img_id': 'img_emb'}
+normalize_field = None
+normalize_all = None
+ITEM_LIST_LENGTH_FIELD = item_length
+LIST_SUFFIX = _list
+MAX_ITEM_LIST_LENGTH = 50
+POSITION_FIELD = position_id
+HEAD_ENTITY_ID_FIELD = head_id
+TAIL_ENTITY_ID_FIELD = tail_id
+RELATION_ID_FIELD = relation_id
+ENTITY_ID_FIELD = entity_id
+
+Other Hyper Parameters: 
+neg_sampling = None
+multi_gpus = False
+repeatable = True
+MODEL_TYPE = ModelType.SEQUENTIAL
+n_layers = 3
+n_heads = 8
+hidden_size = 256
+orig_attribute_hidden_size = [4096]
+attribute_hidden_size = [128]
+inner_size = 256
+hidden_dropout_prob = 0.5
+attn_dropout_prob = 0.3
+hidden_act = gelu
+layer_norm_eps = 1e-12
+initializer_range = 0.02
+selected_features = ['img_emb']
+feature_type = ['static']
+pooling_mode = sum
+loss_type = CE
+weight_sharing = not
+fusion_type = gate
+lamdas = [5]
+attribute_predictor = ['cos_sim']
+diffusion = {'device': 'cuda', 'dims': [1000], 'emb_size': 20, 'mean_type': 'x0', 'noise_max': 0.02, 'noise_min': 0.0001, 'noise_scale': 0.1, 'noise_schedule': 'linear-var', 'norm': False, 'num_heads': 4, 'reweight': True, 'sampling_noise': False, 'sampling_steps': 0, 'steps': 5, 'structure': 'MLP', 'time_type': 'cat', 'hiddenSize': 128, 'inputSize': 128}
+lambda = 0.5
+wandb_run_name = images_log_mlp
+annealing = False
+MODEL_INPUT_TYPE = InputType.POINTWISE
+eval_type = EvaluatorType.RANKING
+device = cuda
+train_neg_sample_args = {'strategy': 'none'}
+eval_neg_sample_args = {'strategy': 'full', 'distribution': 'uniform'}
+
+
+Fri 28 Nov 2025 01:48:55 INFO  Amazon_Sports_and_Outdoors
+The number of users: 35599
+Average actions of users: 8.324540704533963
+The number of items: 18358
+Average actions of items: 16.142997221768262
+The number of inters: 296337
+The sparsity of the dataset: 99.95465569853714%
+Remain Fields: ['user_id', 'item_id', 'rating', 'timestamp', 'title', 'price', 'brand', 'categories', 'sales_type', 'sales_rank', 'img_id', 'img_emb']
+Fri 28 Nov 2025 01:48:59 INFO  [Training]: train_batch_size = [1024] negative sampling: [None]
+Fri 28 Nov 2025 01:48:59 INFO  [Evaluation]: eval_batch_size = [256] eval_args: [{'split': {'LS': 'valid_and_test'}, 'group_by': 'user', 'order': 'TO', 'mode': 'full'}]
+Fri 28 Nov 2025 01:49:01 INFO  NOVA(
+  (item_embedding): Embedding(18358, 256, padding_idx=0)
+  (position_embedding): Embedding(50, 256)
+  (feature_embed_layer_list): ModuleList(
+    (0): Embedding(
+      18358, 4096
+      (mlp): MLP(
+        (net): Sequential(
+          (0): Linear(in_features=4096, out_features=2048, bias=True)
+          (1): ReLU()
+          (2): Dropout(p=0.1, inplace=False)
+          (3): Linear(in_features=2048, out_features=1024, bias=True)
+          (4): ReLU()
+          (5): Dropout(p=0.1, inplace=False)
+          (6): Linear(in_features=1024, out_features=512, bias=True)
+          (7): ReLU()
+          (8): Dropout(p=0.1, inplace=False)
+          (9): Linear(in_features=512, out_features=256, bias=True)
+          (10): ReLU()
+          (11): Dropout(p=0.1, inplace=False)
+          (12): Linear(in_features=256, out_features=128, bias=True)
+          (13): LayerNorm((128,), eps=1e-05, elementwise_affine=True)
+        )
+      )
+    )
+  )
+  (trm_encoder): NOVATransformerEncoder(
+    (layer): ModuleList(
+      (0-2): 3 x NOVATransformerLayer(
+        (multi_head_attention): NOVAMultiHeadAttention(
+          (query): Linear(in_features=256, out_features=256, bias=True)
+          (key): Linear(in_features=256, out_features=256, bias=True)
+          (value): Linear(in_features=256, out_features=256, bias=True)
+          (attn_dropout): Dropout(p=0.3, inplace=False)
+          (dense): Linear(in_features=256, out_features=256, bias=True)
+          (LayerNorm): LayerNorm((256,), eps=1e-12, elementwise_affine=True)
+          (out_dropout): Dropout(p=0.5, inplace=False)
+        )
+        (feed_forward): FeedForward(
+          (dense_1): Linear(in_features=256, out_features=256, bias=True)
+          (dense_2): Linear(in_features=256, out_features=256, bias=True)
+          (LayerNorm): LayerNorm((256,), eps=1e-12, elementwise_affine=True)
+          (dropout): Dropout(p=0.5, inplace=False)
+        )
+      )
+    )
+  )
+  (concat_layer): Linear(in_features=384, out_features=256, bias=True)
+  (LayerNorm): LayerNorm((256,), eps=1e-12, elementwise_affine=True)
+  (dropout): Dropout(p=0.5, inplace=False)
+  (loss_fct): CrossEntropyLoss()
+)
+Trainable parameters: 17176960
+Fri 28 Nov 2025 01:49:43 INFO  epoch 0 training [time: 40.90s, train loss: 1770.0014]
+Fri 28 Nov 2025 01:50:22 INFO  epoch 1 training [time: 38.90s, train loss: 1723.9712]
+Fri 28 Nov 2025 01:50:26 INFO  epoch 1 evaluating [time: 4.00s, valid_score: 0.012600]
+Fri 28 Nov 2025 01:50:26 INFO  valid result: 
+recall@3 : 0.006    recall@5 : 0.0084    recall@10 : 0.0126    recall@20 : 0.0236    ndcg@3 : 0.0044    ndcg@5 : 0.0054    ndcg@10 : 0.0068    ndcg@20 : 0.0095    
+Fri 28 Nov 2025 01:50:26 INFO  Saving current best: saved/NOVA-Nov-28-2025_01-49-01.pth
+Fri 28 Nov 2025 01:51:07 INFO  epoch 2 training [time: 40.93s, train loss: 1721.4754]
+Fri 28 Nov 2025 01:51:48 INFO  epoch 3 training [time: 40.78s, train loss: 1714.5547]
+Fri 28 Nov 2025 01:51:52 INFO  epoch 3 evaluating [time: 3.89s, valid_score: 0.016200]
+Fri 28 Nov 2025 01:51:52 INFO  valid result: 
+recall@3 : 0.0066    recall@5 : 0.0094    recall@10 : 0.0162    recall@20 : 0.0285    ndcg@3 : 0.0048    ndcg@5 : 0.0059    ndcg@10 : 0.0081    ndcg@20 : 0.0112    
+Fri 28 Nov 2025 01:51:51 INFO  Saving current best: saved/NOVA-Nov-28-2025_01-49-01.pth
+Fri 28 Nov 2025 01:52:32 INFO  epoch 4 training [time: 40.68s, train loss: 1693.4581]
+Fri 28 Nov 2025 01:53:15 INFO  epoch 5 training [time: 43.07s, train loss: 1671.7737]
+Fri 28 Nov 2025 01:53:22 INFO  epoch 5 evaluating [time: 7.44s, valid_score: 0.020500]
+Fri 28 Nov 2025 01:53:22 INFO  valid result: 
+recall@3 : 0.0074    recall@5 : 0.011    recall@10 : 0.0205    recall@20 : 0.0347    ndcg@3 : 0.0053    ndcg@5 : 0.0068    ndcg@10 : 0.0098    ndcg@20 : 0.0134    
+Fri 28 Nov 2025 01:53:25 INFO  Saving current best: saved/NOVA-Nov-28-2025_01-49-01.pth
+Fri 28 Nov 2025 01:54:09 INFO  epoch 6 training [time: 44.13s, train loss: 1655.5336]
+Fri 28 Nov 2025 01:54:52 INFO  epoch 7 training [time: 43.43s, train loss: 1639.6376]
+Fri 28 Nov 2025 01:54:56 INFO  epoch 7 evaluating [time: 3.21s, valid_score: 0.024000]
+Fri 28 Nov 2025 01:54:56 INFO  valid result: 
+recall@3 : 0.009    recall@5 : 0.0136    recall@10 : 0.024    recall@20 : 0.0394    ndcg@3 : 0.0069    ndcg@5 : 0.0088    ndcg@10 : 0.0121    ndcg@20 : 0.016    
+Fri 28 Nov 2025 01:54:59 INFO  Saving current best: saved/NOVA-Nov-28-2025_01-49-01.pth
+Fri 28 Nov 2025 01:55:42 INFO  epoch 8 training [time: 43.11s, train loss: 1623.3860]
+Fri 28 Nov 2025 01:56:24 INFO  epoch 9 training [time: 42.15s, train loss: 1607.9903]
+Fri 28 Nov 2025 01:56:31 INFO  epoch 9 evaluating [time: 6.75s, valid_score: 0.028700]
+Fri 28 Nov 2025 01:56:31 INFO  valid result: 
+recall@3 : 0.0122    recall@5 : 0.0172    recall@10 : 0.0287    recall@20 : 0.0476    ndcg@3 : 0.009    ndcg@5 : 0.011    ndcg@10 : 0.0147    ndcg@20 : 0.0194    
+Fri 28 Nov 2025 01:56:37 INFO  Saving current best: saved/NOVA-Nov-28-2025_01-49-01.pth
+Fri 28 Nov 2025 01:57:21 INFO  epoch 10 training [time: 43.74s, train loss: 1592.6991]
+Fri 28 Nov 2025 01:58:01 INFO  epoch 11 training [time: 40.31s, train loss: 1577.1274]
+Fri 28 Nov 2025 01:58:09 INFO  epoch 11 evaluating [time: 7.94s, valid_score: 0.035100]
+Fri 28 Nov 2025 01:58:09 INFO  valid result: 
+recall@3 : 0.0151    recall@5 : 0.022    recall@10 : 0.0351    recall@20 : 0.0554    ndcg@3 : 0.0112    ndcg@5 : 0.0141    ndcg@10 : 0.0183    ndcg@20 : 0.0234    
+Fri 28 Nov 2025 01:58:15 INFO  Saving current best: saved/NOVA-Nov-28-2025_01-49-01.pth
+Fri 28 Nov 2025 01:58:58 INFO  epoch 12 training [time: 42.73s, train loss: 1562.4829]
+Fri 28 Nov 2025 01:59:42 INFO  epoch 13 training [time: 43.92s, train loss: 1548.3468]
+Fri 28 Nov 2025 01:59:47 INFO  epoch 13 evaluating [time: 5.32s, valid_score: 0.038900]
+Fri 28 Nov 2025 01:59:47 INFO  valid result: 
+recall@3 : 0.0172    recall@5 : 0.0238    recall@10 : 0.0389    recall@20 : 0.0607    ndcg@3 : 0.0133    ndcg@5 : 0.016    ndcg@10 : 0.0209    ndcg@20 : 0.0264    
+Fri 28 Nov 2025 01:59:50 INFO  Saving current best: saved/NOVA-Nov-28-2025_01-49-01.pth
+Fri 28 Nov 2025 02:00:30 INFO  epoch 14 training [time: 40.21s, train loss: 1534.9650]
+Fri 28 Nov 2025 02:01:16 INFO  epoch 15 training [time: 45.91s, train loss: 1521.8805]
+Fri 28 Nov 2025 02:01:24 INFO  epoch 15 evaluating [time: 7.78s, valid_score: 0.042000]
+Fri 28 Nov 2025 02:01:24 INFO  valid result: 
+recall@3 : 0.0195    recall@5 : 0.0268    recall@10 : 0.042    recall@20 : 0.0635    ndcg@3 : 0.0149    ndcg@5 : 0.0179    ndcg@10 : 0.0228    ndcg@20 : 0.0282    
+Fri 28 Nov 2025 02:01:28 INFO  Saving current best: saved/NOVA-Nov-28-2025_01-49-01.pth
+Fri 28 Nov 2025 02:02:13 INFO  epoch 16 training [time: 45.36s, train loss: 1509.4549]
+Fri 28 Nov 2025 02:02:56 INFO  epoch 17 training [time: 42.74s, train loss: 1497.0619]
+Fri 28 Nov 2025 02:03:00 INFO  epoch 17 evaluating [time: 3.39s, valid_score: 0.044900]
+Fri 28 Nov 2025 02:03:00 INFO  valid result: 
+recall@3 : 0.0205    recall@5 : 0.0294    recall@10 : 0.0449    recall@20 : 0.067    ndcg@3 : 0.0158    ndcg@5 : 0.0195    ndcg@10 : 0.0245    ndcg@20 : 0.03    
+Fri 28 Nov 2025 02:03:04 INFO  Saving current best: saved/NOVA-Nov-28-2025_01-49-01.pth
+Fri 28 Nov 2025 02:03:49 INFO  epoch 18 training [time: 45.34s, train loss: 1484.5041]
+Fri 28 Nov 2025 02:04:32 INFO  epoch 19 training [time: 42.77s, train loss: 1473.0140]
+Fri 28 Nov 2025 02:04:39 INFO  epoch 19 evaluating [time: 7.43s, valid_score: 0.047200]
+Fri 28 Nov 2025 02:04:39 INFO  valid result: 
+recall@3 : 0.0226    recall@5 : 0.0312    recall@10 : 0.0472    recall@20 : 0.0716    ndcg@3 : 0.0175    ndcg@5 : 0.0211    ndcg@10 : 0.0262    ndcg@20 : 0.0323    
+Fri 28 Nov 2025 02:04:46 INFO  Saving current best: saved/NOVA-Nov-28-2025_01-49-01.pth
+Fri 28 Nov 2025 02:05:28 INFO  epoch 20 training [time: 42.60s, train loss: 1461.7300]
+Fri 28 Nov 2025 02:06:11 INFO  epoch 21 training [time: 42.38s, train loss: 1450.3301]
+Fri 28 Nov 2025 02:06:17 INFO  epoch 21 evaluating [time: 6.42s, valid_score: 0.048400]
+Fri 28 Nov 2025 02:06:17 INFO  valid result: 
+recall@3 : 0.0231    recall@5 : 0.0322    recall@10 : 0.0484    recall@20 : 0.0724    ndcg@3 : 0.0181    ndcg@5 : 0.0218    ndcg@10 : 0.027    ndcg@20 : 0.0331    
+Fri 28 Nov 2025 02:06:22 INFO  Saving current best: saved/NOVA-Nov-28-2025_01-49-01.pth
+Fri 28 Nov 2025 02:07:06 INFO  epoch 22 training [time: 43.48s, train loss: 1438.8303]
+Fri 28 Nov 2025 02:07:49 INFO  epoch 23 training [time: 43.17s, train loss: 1427.7731]
+Fri 28 Nov 2025 02:07:54 INFO  epoch 23 evaluating [time: 4.78s, valid_score: 0.049900]
+Fri 28 Nov 2025 02:07:54 INFO  valid result: 
+recall@3 : 0.0246    recall@5 : 0.0335    recall@10 : 0.0499    recall@20 : 0.0727    ndcg@3 : 0.0193    ndcg@5 : 0.0229    ndcg@10 : 0.0282    ndcg@20 : 0.0339    
+Fri 28 Nov 2025 02:07:57 INFO  Saving current best: saved/NOVA-Nov-28-2025_01-49-01.pth
+Fri 28 Nov 2025 02:08:39 INFO  epoch 24 training [time: 42.32s, train loss: 1416.8272]
+Fri 28 Nov 2025 02:09:24 INFO  epoch 25 training [time: 45.27s, train loss: 1406.4777]
+Fri 28 Nov 2025 02:09:31 INFO  epoch 25 evaluating [time: 7.03s, valid_score: 0.052300]
+Fri 28 Nov 2025 02:09:31 INFO  valid result: 
+recall@3 : 0.0263    recall@5 : 0.0351    recall@10 : 0.0523    recall@20 : 0.0746    ndcg@3 : 0.0208    ndcg@5 : 0.0244    ndcg@10 : 0.0299    ndcg@20 : 0.0355    
+Fri 28 Nov 2025 02:09:37 INFO  Saving current best: saved/NOVA-Nov-28-2025_01-49-01.pth
+Fri 28 Nov 2025 02:10:19 INFO  epoch 26 training [time: 42.50s, train loss: 1395.5869]
+Fri 28 Nov 2025 02:11:02 INFO  epoch 27 training [time: 42.99s, train loss: 1384.3610]
+Fri 28 Nov 2025 02:11:10 INFO  epoch 27 evaluating [time: 7.74s, valid_score: 0.052600]
+Fri 28 Nov 2025 02:11:10 INFO  valid result: 
+recall@3 : 0.0271    recall@5 : 0.0358    recall@10 : 0.0526    recall@20 : 0.0758    ndcg@3 : 0.0218    ndcg@5 : 0.0253    ndcg@10 : 0.0307    ndcg@20 : 0.0366    
+Fri 28 Nov 2025 02:11:15 INFO  Saving current best: saved/NOVA-Nov-28-2025_01-49-01.pth
+Fri 28 Nov 2025 02:12:00 INFO  epoch 28 training [time: 44.90s, train loss: 1374.3372]
+Fri 28 Nov 2025 02:12:44 INFO  epoch 29 training [time: 43.83s, train loss: 1364.4536]
+Fri 28 Nov 2025 02:12:48 INFO  epoch 29 evaluating [time: 4.30s, valid_score: 0.053300]
+Fri 28 Nov 2025 02:12:48 INFO  valid result: 
+recall@3 : 0.0275    recall@5 : 0.0369    recall@10 : 0.0533    recall@20 : 0.0759    ndcg@3 : 0.0224    ndcg@5 : 0.0263    ndcg@10 : 0.0316    ndcg@20 : 0.0372    
+Fri 28 Nov 2025 02:12:51 INFO  Saving current best: saved/NOVA-Nov-28-2025_01-49-01.pth
+Fri 28 Nov 2025 02:13:33 INFO  epoch 30 training [time: 42.59s, train loss: 1354.0108]
+Fri 28 Nov 2025 02:14:18 INFO  epoch 31 training [time: 44.70s, train loss: 1343.6756]
+Fri 28 Nov 2025 02:14:25 INFO  epoch 31 evaluating [time: 6.58s, valid_score: 0.053700]
+Fri 28 Nov 2025 02:14:25 INFO  valid result: 
+recall@3 : 0.0275    recall@5 : 0.037    recall@10 : 0.0537    recall@20 : 0.0774    ndcg@3 : 0.0223    ndcg@5 : 0.0262    ndcg@10 : 0.0316    ndcg@20 : 0.0375    
+Fri 28 Nov 2025 02:14:30 INFO  Saving current best: saved/NOVA-Nov-28-2025_01-49-01.pth
+Fri 28 Nov 2025 02:15:15 INFO  epoch 32 training [time: 44.59s, train loss: 1334.2154]
+Fri 28 Nov 2025 02:15:57 INFO  epoch 33 training [time: 42.51s, train loss: 1324.3768]
+Fri 28 Nov 2025 02:16:01 INFO  epoch 33 evaluating [time: 3.98s, valid_score: 0.054400]
+Fri 28 Nov 2025 02:16:01 INFO  valid result: 
+recall@3 : 0.0287    recall@5 : 0.0376    recall@10 : 0.0544    recall@20 : 0.0771    ndcg@3 : 0.0231    ndcg@5 : 0.0267    ndcg@10 : 0.0321    ndcg@20 : 0.0378    
+Fri 28 Nov 2025 02:16:04 INFO  Saving current best: saved/NOVA-Nov-28-2025_01-49-01.pth
+Fri 28 Nov 2025 02:16:48 INFO  epoch 34 training [time: 44.19s, train loss: 1314.1795]
+Fri 28 Nov 2025 02:17:32 INFO  epoch 35 training [time: 44.50s, train loss: 1305.2323]
+Fri 28 Nov 2025 02:17:39 INFO  epoch 35 evaluating [time: 6.77s, valid_score: 0.055100]
+Fri 28 Nov 2025 02:17:39 INFO  valid result: 
+recall@3 : 0.0293    recall@5 : 0.0383    recall@10 : 0.0551    recall@20 : 0.079    ndcg@3 : 0.0239    ndcg@5 : 0.0276    ndcg@10 : 0.033    ndcg@20 : 0.039    
+Fri 28 Nov 2025 02:17:46 INFO  Saving current best: saved/NOVA-Nov-28-2025_01-49-01.pth
+Fri 28 Nov 2025 02:18:29 INFO  epoch 36 training [time: 43.44s, train loss: 1295.3988]
+Fri 28 Nov 2025 02:19:11 INFO  epoch 37 training [time: 42.27s, train loss: 1286.7476]
+Fri 28 Nov 2025 02:19:18 INFO  epoch 37 evaluating [time: 6.99s, valid_score: 0.054200]
+Fri 28 Nov 2025 02:19:18 INFO  valid result: 
+recall@3 : 0.0297    recall@5 : 0.0389    recall@10 : 0.0542    recall@20 : 0.0776    ndcg@3 : 0.024    ndcg@5 : 0.0278    ndcg@10 : 0.0327    ndcg@20 : 0.0386    
+Fri 28 Nov 2025 02:20:03 INFO  epoch 38 training [time: 44.49s, train loss: 1277.3278]
+Fri 28 Nov 2025 02:20:48 INFO  epoch 39 training [time: 44.62s, train loss: 1268.1388]
+Fri 28 Nov 2025 02:20:54 INFO  epoch 39 evaluating [time: 6.81s, valid_score: 0.055500]
+Fri 28 Nov 2025 02:20:54 INFO  valid result: 
+recall@3 : 0.0303    recall@5 : 0.0396    recall@10 : 0.0555    recall@20 : 0.077    ndcg@3 : 0.0245    ndcg@5 : 0.0283    ndcg@10 : 0.0334    ndcg@20 : 0.0388    
+Fri 28 Nov 2025 02:20:59 INFO  Saving current best: saved/NOVA-Nov-28-2025_01-49-01.pth
+Fri 28 Nov 2025 02:21:41 INFO  epoch 40 training [time: 41.93s, train loss: 1259.2587]
+Fri 28 Nov 2025 02:22:24 INFO  epoch 41 training [time: 43.49s, train loss: 1249.8276]
+Fri 28 Nov 2025 02:22:32 INFO  epoch 41 evaluating [time: 7.47s, valid_score: 0.055900]
+Fri 28 Nov 2025 02:22:32 INFO  valid result: 
+recall@3 : 0.0308    recall@5 : 0.0397    recall@10 : 0.0559    recall@20 : 0.0775    ndcg@3 : 0.0249    ndcg@5 : 0.0285    ndcg@10 : 0.0337    ndcg@20 : 0.0392    
+Fri 28 Nov 2025 02:22:37 INFO  Saving current best: saved/NOVA-Nov-28-2025_01-49-01.pth
+Fri 28 Nov 2025 02:23:21 INFO  epoch 42 training [time: 44.19s, train loss: 1241.4161]
+Fri 28 Nov 2025 02:24:04 INFO  epoch 43 training [time: 43.54s, train loss: 1232.4627]
+Fri 28 Nov 2025 02:24:10 INFO  epoch 43 evaluating [time: 5.89s, valid_score: 0.056100]
+Fri 28 Nov 2025 02:24:10 INFO  valid result: 
+recall@3 : 0.0314    recall@5 : 0.0398    recall@10 : 0.0561    recall@20 : 0.0771    ndcg@3 : 0.0252    ndcg@5 : 0.0286    ndcg@10 : 0.0339    ndcg@20 : 0.0391    
+Fri 28 Nov 2025 02:24:14 INFO  Saving current best: saved/NOVA-Nov-28-2025_01-49-01.pth
+Fri 28 Nov 2025 02:24:55 INFO  epoch 44 training [time: 41.34s, train loss: 1223.8197]
+Fri 28 Nov 2025 02:25:36 INFO  epoch 45 training [time: 40.35s, train loss: 1214.8940]
+Fri 28 Nov 2025 02:25:39 INFO  epoch 45 evaluating [time: 3.72s, valid_score: 0.054800]
+Fri 28 Nov 2025 02:25:39 INFO  valid result: 
+recall@3 : 0.0311    recall@5 : 0.0399    recall@10 : 0.0548    recall@20 : 0.0765    ndcg@3 : 0.0251    ndcg@5 : 0.0288    ndcg@10 : 0.0336    ndcg@20 : 0.039    
+Fri 28 Nov 2025 02:26:20 INFO  epoch 46 training [time: 40.31s, train loss: 1207.2611]
+Fri 28 Nov 2025 02:27:00 INFO  epoch 47 training [time: 40.26s, train loss: 1198.2502]
+Fri 28 Nov 2025 02:27:03 INFO  epoch 47 evaluating [time: 3.66s, valid_score: 0.054300]
+Fri 28 Nov 2025 02:27:03 INFO  valid result: 
+recall@3 : 0.0308    recall@5 : 0.0395    recall@10 : 0.0543    recall@20 : 0.0747    ndcg@3 : 0.0252    ndcg@5 : 0.0288    ndcg@10 : 0.0336    ndcg@20 : 0.0387    
+Fri 28 Nov 2025 02:27:47 INFO  epoch 48 training [time: 43.68s, train loss: 1190.0568]
+Fri 28 Nov 2025 02:28:32 INFO  epoch 49 training [time: 44.48s, train loss: 1181.6607]
+Fri 28 Nov 2025 02:28:39 INFO  epoch 49 evaluating [time: 7.47s, valid_score: 0.055000]
+Fri 28 Nov 2025 02:28:39 INFO  valid result: 
+recall@3 : 0.0315    recall@5 : 0.0402    recall@10 : 0.055    recall@20 : 0.0759    ndcg@3 : 0.0253    ndcg@5 : 0.0289    ndcg@10 : 0.0337    ndcg@20 : 0.0389    
+Fri 28 Nov 2025 02:29:23 INFO  epoch 50 training [time: 43.49s, train loss: 1173.9632]
+Fri 28 Nov 2025 02:30:05 INFO  epoch 51 training [time: 41.88s, train loss: 1165.9797]
+Fri 28 Nov 2025 02:30:12 INFO  epoch 51 evaluating [time: 7.31s, valid_score: 0.053200]
+Fri 28 Nov 2025 02:30:12 INFO  valid result: 
+recall@3 : 0.0315    recall@5 : 0.0395    recall@10 : 0.0532    recall@20 : 0.0743    ndcg@3 : 0.0255    ndcg@5 : 0.0288    ndcg@10 : 0.0332    ndcg@20 : 0.0385    
+Fri 28 Nov 2025 02:30:56 INFO  epoch 52 training [time: 44.46s, train loss: 1157.5189]
+Fri 28 Nov 2025 02:31:41 INFO  epoch 53 training [time: 44.39s, train loss: 1150.2528]
+Fri 28 Nov 2025 02:31:48 INFO  epoch 53 evaluating [time: 7.38s, valid_score: 0.053800]
+Fri 28 Nov 2025 02:31:48 INFO  valid result: 
+recall@3 : 0.031    recall@5 : 0.0395    recall@10 : 0.0538    recall@20 : 0.0753    ndcg@3 : 0.0254    ndcg@5 : 0.0289    ndcg@10 : 0.0334    ndcg@20 : 0.0388    
+Fri 28 Nov 2025 02:32:31 INFO  epoch 54 training [time: 42.83s, train loss: 1142.2536]
+Fri 28 Nov 2025 02:33:12 INFO  epoch 55 training [time: 41.03s, train loss: 1133.9917]
+Fri 28 Nov 2025 02:33:16 INFO  epoch 55 evaluating [time: 3.69s, valid_score: 0.052600]
+Fri 28 Nov 2025 02:33:16 INFO  valid result: 
+recall@3 : 0.0303    recall@5 : 0.0388    recall@10 : 0.0526    recall@20 : 0.0739    ndcg@3 : 0.0247    ndcg@5 : 0.0282    ndcg@10 : 0.0327    ndcg@20 : 0.038    
+Fri 28 Nov 2025 02:33:56 INFO  epoch 56 training [time: 40.40s, train loss: 1126.4508]
+Fri 28 Nov 2025 02:34:36 INFO  epoch 57 training [time: 40.32s, train loss: 1119.3044]
+Fri 28 Nov 2025 02:34:40 INFO  epoch 57 evaluating [time: 3.73s, valid_score: 0.052400]
+Fri 28 Nov 2025 02:34:40 INFO  valid result: 
+recall@3 : 0.0303    recall@5 : 0.0387    recall@10 : 0.0524    recall@20 : 0.0732    ndcg@3 : 0.0248    ndcg@5 : 0.0283    ndcg@10 : 0.0327    ndcg@20 : 0.0379    
+Fri 28 Nov 2025 02:35:20 INFO  epoch 58 training [time: 40.30s, train loss: 1109.9975]
+Fri 28 Nov 2025 02:36:04 INFO  epoch 59 training [time: 44.08s, train loss: 1103.0262]
+Fri 28 Nov 2025 02:36:12 INFO  epoch 59 evaluating [time: 7.45s, valid_score: 0.053200]
+Fri 28 Nov 2025 02:36:12 INFO  valid result: 
+recall@3 : 0.0303    recall@5 : 0.0385    recall@10 : 0.0532    recall@20 : 0.0727    ndcg@3 : 0.025    ndcg@5 : 0.0283    ndcg@10 : 0.033    ndcg@20 : 0.0379    
+Fri 28 Nov 2025 02:36:56 INFO  epoch 60 training [time: 44.22s, train loss: 1095.5152]
+Fri 28 Nov 2025 02:37:40 INFO  epoch 61 training [time: 43.42s, train loss: 1088.3362]
+Fri 28 Nov 2025 02:37:44 INFO  epoch 61 evaluating [time: 4.60s, valid_score: 0.052100]
+Fri 28 Nov 2025 02:37:44 INFO  valid result: 
+recall@3 : 0.0298    recall@5 : 0.0377    recall@10 : 0.0521    recall@20 : 0.0723    ndcg@3 : 0.0246    ndcg@5 : 0.0278    ndcg@10 : 0.0325    ndcg@20 : 0.0376    
+Fri 28 Nov 2025 02:38:26 INFO  epoch 62 training [time: 42.06s, train loss: 1080.6899]
+Fri 28 Nov 2025 02:39:11 INFO  epoch 63 training [time: 44.45s, train loss: 1074.1153]
+Fri 28 Nov 2025 02:39:18 INFO  epoch 63 evaluating [time: 7.26s, valid_score: 0.051300]
+Fri 28 Nov 2025 02:39:18 INFO  valid result: 
+recall@3 : 0.0299    recall@5 : 0.0379    recall@10 : 0.0513    recall@20 : 0.0712    ndcg@3 : 0.0246    ndcg@5 : 0.0278    ndcg@10 : 0.0321    ndcg@20 : 0.0371    
+Fri 28 Nov 2025 02:40:05 INFO  epoch 64 training [time: 46.71s, train loss: 1067.1308]
+Fri 28 Nov 2025 02:40:48 INFO  epoch 65 training [time: 43.62s, train loss: 1060.0263]
+Fri 28 Nov 2025 02:40:54 INFO  epoch 65 evaluating [time: 5.24s, valid_score: 0.050500]
+Fri 28 Nov 2025 02:40:54 INFO  valid result: 
+recall@3 : 0.0297    recall@5 : 0.0374    recall@10 : 0.0505    recall@20 : 0.0705    ndcg@3 : 0.0243    ndcg@5 : 0.0274    ndcg@10 : 0.0316    ndcg@20 : 0.0367    
+Fri 28 Nov 2025 02:40:54 INFO  Finished training, best eval result in epoch 43
+Fri 28 Nov 2025 02:40:55 INFO  Loading model structure and parameters from saved/NOVA-Nov-28-2025_01-49-01.pth
+Fri 28 Nov 2025 02:40:59 INFO  best valid : {'recall@3': np.float64(0.0314), 'recall@5': np.float64(0.0398), 'recall@10': np.float64(0.0561), 'recall@20': np.float64(0.0771), 'ndcg@3': np.float64(0.0252), 'ndcg@5': np.float64(0.0286), 'ndcg@10': np.float64(0.0339), 'ndcg@20': np.float64(0.0391)}
+Fri 28 Nov 2025 02:40:59 INFO  test result: {'recall@3': np.float64(0.0236), 'recall@5': np.float64(0.0309), 'recall@10': np.float64(0.0434), 'recall@20': np.float64(0.0608), 'ndcg@3': np.float64(0.0191), 'ndcg@5': np.float64(0.0221), 'ndcg@10': np.float64(0.0261), 'ndcg@20': np.float64(0.0305)}

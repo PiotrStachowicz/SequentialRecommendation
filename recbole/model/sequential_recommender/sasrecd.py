@@ -13,13 +13,48 @@ Reference:
 
 import torch
 import numpy as np
+from tensorflow.python.keras.backend import print_tensor
 from torch import nn
+import wandb
+import math
 
 
 from recbole.model.abstract_recommender import SequentialRecommender
 from recbole.model.layers import FeatureSeqEmbLayer,DIFTransformerEncoder
 from recbole.model.loss import BPRLoss
 import copy
+
+class MLP(nn.Module):
+    def __init__(self, input_dim=4096, output_dim=128, dropout=0.1, device='cuda'):
+        super().__init__()
+
+        inp_power = int(math.log2(input_dim))
+        out_power = int(math.log2(output_dim))
+
+        last_power = out_power + 1
+
+        module_list = []
+        for power in range(inp_power, out_power + 1, -1):
+            module_list.append(nn.Linear(in_features=2**power, out_features=2**(power-1)))
+            module_list.append(nn.ReLU())
+            module_list.append(nn.Dropout(dropout))
+
+        module_list.append(nn.Linear(in_features=2**last_power, out_features=output_dim))
+        module_list.append(nn.LayerNorm(output_dim))
+
+        self.net = nn.Sequential(*module_list)
+        self.to(device)
+    
+    def forward(self, X):
+        noise = torch.randn_like(X) * 0.05
+
+        noisy_res = self.net(X + noise)
+        # res = self.net(X)
+        
+        # # MSE error for consistency
+        # self.consistency_loss = torch.mean((noisy_res - res) ** 2)
+
+        return noisy_res
 
 
 class SASRecD(SequentialRecommender):
@@ -36,6 +71,7 @@ class SASRecD(SequentialRecommender):
         self.n_heads = config['n_heads']
         self.hidden_size = config['hidden_size']  # same as embedding_size
         self.inner_size = config['inner_size']  # the dimensionality in feed-forward layer
+        self.orig_attribute_hidden_size = config['orig_attribute_hidden_size']
         self.attribute_hidden_size = config['attribute_hidden_size']
         self.hidden_dropout_prob = config['hidden_dropout_prob']
         self.attn_dropout_prob = config['attn_dropout_prob']
@@ -54,26 +90,39 @@ class SASRecD(SequentialRecommender):
 
         self.lamdas = config['lamdas']
         self.attribute_predictor = config['attribute_predictor']
+        self.annealing = config['annealing']
 
         # define layers and loss
         self.item_embedding = nn.Embedding(self.n_items, self.hidden_size, padding_idx=0)
         self.position_embedding = nn.Embedding(self.max_seq_length, self.hidden_size)
 
+        wandb.init(
+            project="SequentialRecommendation",
+            name= 'SASRecD_' + config['wandb_run_name']
+        )
+
         layer_list = []
 
         for i, feature in enumerate(self.selected_features):
             feature_type = self.feature_type[i]
-
+            
             if feature_type == 'static':
-                layer_list.append(
-                    nn.Embedding.from_pretrained(
-                        torch.from_numpy(
-                            dataset.get_preload_weight(
-                                list(dataset.config['preload_weight'].keys())[i]
-                            ).astype(np.float32)
-                        )
+                feature_dim = self.orig_attribute_hidden_size[i]
+                emb_layer = nn.Embedding.from_pretrained(
+                    torch.from_numpy(
+                        dataset.get_preload_weight(
+                            f"{feature.split('_')[0]}_id"
+                        ).astype(np.float32)
                     )
                 )
+                emb_layer.original_weight = emb_layer.weight.detach().clone().to(self.device)
+                emb_layer.mlp = MLP(
+                    input_dim=feature_dim, 
+                    output_dim=self.attribute_hidden_size[i], 
+                    device=self.device
+                )
+
+                layer_list.append(emb_layer)
             elif feature_type == 'categorical':
                 layer_list.append(
                     copy.deepcopy(
@@ -88,6 +137,10 @@ class SASRecD(SequentialRecommender):
                 )
 
         self.feature_embed_layer_list = nn.ModuleList(layer_list)
+
+        self.global_step = 0
+        self.anneal_T = 5000
+        self.B = 5
 
         self.trm_encoder = DIFTransformerEncoder(
             n_layers=self.n_layers,
@@ -132,7 +185,6 @@ class SASRecD(SequentialRecommender):
                     nn.Linear(in_features=self.hidden_size, out_features=self.feature_embed_layer_list[i].weight.shape[1])
                 )
             elif self.attribute_predictor[i] == '' or self.attribute_predictor[i] == 'not':
-                # awful
                 module_list.append(None)
 
         self.ap = nn.ModuleList(module_list)
@@ -152,6 +204,12 @@ class SASRecD(SequentialRecommender):
         self.apply(self._init_weights)
         self.other_parameter_name = ['feature_embed_layer_list']
 
+    def anneal_lambda(self, lam_max):
+        """Annealing"""
+        t = self.global_step
+        # sigmoid in [0,1]
+        factor = 1 / (1 + torch.exp(torch.tensor(self.B * (t / self.anneal_T - 0.5))))
+        return lam_max * factor.item()
 
     def _init_weights(self, module):
         """ Initialize the weights """
@@ -196,7 +254,9 @@ class SASRecD(SequentialRecommender):
         for i, feature_embed_layer in enumerate(self.feature_embed_layer_list):
             if self.feature_type[i] == 'static':
                 static_embedding = feature_embed_layer(item_seq).unsqueeze(-2)
-                feature_table.append(static_embedding)
+                reduced_embedding = feature_embed_layer.mlp(static_embedding)
+
+                feature_table.append(reduced_embedding)
             elif self.feature_type[i] == 'categorical':
                 sparse_embedding, dense_embedding = feature_embed_layer(None, item_seq)
                 sparse_embedding = sparse_embedding['item']
@@ -219,10 +279,13 @@ class SASRecD(SequentialRecommender):
         return seq_output
 
     def calculate_loss(self, interaction):
+        self.global_step += 1
+
         item_seq = interaction[self.ITEM_SEQ]
         item_seq_len = interaction[self.ITEM_SEQ_LEN]
         seq_output = self.forward(item_seq, item_seq_len)
         pos_items = interaction[self.POS_ITEM_ID]
+
         if self.loss_type == 'BPR':
             neg_items = interaction[self.NEG_ITEM_ID]
             pos_items_emb = self.item_embedding(pos_items)
@@ -238,6 +301,7 @@ class SASRecD(SequentialRecommender):
 
             loss_dic = {'item_loss': loss}
             attribute_loss_sum = 0
+            #consistency_loss = 0
 
             for i, a_predictor in enumerate(self.ap):
                 if self.attribute_predictor[i] == '' or self.attribute_predictor[i] == 'not':
@@ -257,6 +321,36 @@ class SASRecD(SequentialRecommender):
                     attribute_loss = (1 - cos_sim).mean()
 
                     loss_dic[self.selected_features[i]] = attribute_loss
+                    # true_emb = self.feature_embed_layer_list[i](pos_items)
+
+                    # pred_emb = a_predictor(seq_output)
+
+                    # test_item_emb = self.feature_embed_layer_list[i].weight
+                    # logits = torch.matmul(pred_emb, test_item_emb.transpose(0, 1))
+
+                    # ground_truth = nn.functional.one_hot(pos_items, num_classes=test_item_emb.shape[0])
+
+                    # ground_truth = ground_truth.float()
+
+                    # attribute_loss = self.attribute_loss_fct(logits, ground_truth)
+
+                    # attribute_loss = torch.mean(attribute_loss[:, 1:])
+                    # loss_dic[self.selected_features[i]] = attribute_loss
+
+                # elif self.attribute_predictor[i] == 'CE':
+                #     true_emb = self.feature_embed_layer_list[i](pos_items)
+
+                #     pred_emb = a_predictor(seq_output)
+
+                #     test_item_emb = self.item_embedding.weight
+                #     logits = torch.matmul(pred_emb, test_item_emb.transpose(0, 1))
+
+                #     ground_truth = nn.functional.one_hot(pos_items, num_classes=test_item_emb.shape[0])
+
+                #     attribute_loss = self.attribute_loss_fct(logits, ground_truth)
+
+                #     attribute_loss = torch.mean(attribute_loss[:, 1:])
+                #     loss_dic[self.selected_features[i]] = attribute_loss
 
                 elif self.attribute_predictor[i] == 'linear':
                     attribute_logits = a_predictor(seq_output)
@@ -274,10 +368,43 @@ class SASRecD(SequentialRecommender):
             for i, attribute in enumerate(self.selected_features):
                 if self.attribute_predictor[i] == '' or self.attribute_predictor[i] == 'not':
                     continue
-                attribute_loss_sum += self.lamdas[i] * loss_dic[attribute]
+                lam = self.anneal_lambda(self.lamdas[i]) if self.annealing else self.lamdas[i]
 
-            total_loss = loss + attribute_loss_sum
+                attribute_loss_sum += lam * loss_dic[attribute]
+
+            features = sum([1 for ap in self.attribute_predictor if ap != '' and ap != 'not'])
+
+            total_loss = loss
+            if features > 0:
+                total_loss += (attribute_loss_sum / features)
+
+            #consistency loss
+            # mlp_consistency_loss = 0.0
+            # count = 0
+            # for layer in self.feature_embed_layer_list:
+            #     if hasattr(layer, 'mlp'):
+            #         mlp_consistency_loss += layer.mlp.consistency_loss
+            #         count += 1
+
+            # if count > 0:
+            #     mlp_consistency_loss = mlp_consistency_loss / count
+            #     total_loss += mlp_consistency_loss
+            #     loss_dic['consistency_loss'] = mlp_consistency_loss
+
+            # reg_loss = 0.0
+            # reg_lamda = 5
+
+            # for emb in self.feature_embed_layer_list:
+            #     if hasattr(emb, 'original_weight'):
+            #         reg_loss += reg_lamda * torch.mean((emb.weight - emb.original_weight) ** 2)
+
+            # loss_dic['reg_loss'] = reg_loss
+
+            # total_loss += reg_loss
+
             loss_dic['total_loss'] = total_loss
+
+            wandb.log(loss_dic)
 
             return total_loss
 
@@ -289,6 +416,37 @@ class SASRecD(SequentialRecommender):
         test_item_emb = self.item_embedding(test_item)
         scores = torch.mul(seq_output, test_item_emb).sum(dim=1)
         return scores
+
+    def predict_side_task(self, interaction):
+        item_seq = interaction[self.ITEM_SEQ]
+        item_seq_len = interaction[self.ITEM_SEQ_LEN]
+
+        seq_output = self.forward(item_seq, item_seq_len)
+
+        test_items_emb = self.item_embedding.weight
+        scores = torch.matmul(seq_output, test_items_emb.transpose(0, 1))
+
+        idx = torch.argmax(scores, dim=1)
+
+        loss = dict()
+
+        for i, ap in enumerate(self.ap):
+            if self.attribute_predictor[i] == '' or self.attribute_predictor[i] == 'not':
+                continue
+
+            if self.attribute_predictor[i] == 'cos_sim':
+                true_emb = self.feature_embed_layer_list[i](idx)
+                pred_emb = ap(seq_output)
+
+                # Normalize embeddings to unit vectors
+                pred_emb_norm = torch.nn.functional.normalize(pred_emb, p=2, dim=-1)
+                true_emb_norm = torch.nn.functional.normalize(true_emb, p=2, dim=-1)
+
+                # Compute cosine similarity
+                cos_sim = (pred_emb_norm * true_emb_norm).sum(dim=-1)
+                loss[self.selected_features[i]] = (1 - cos_sim).mean()
+
+        return loss
 
     def full_sort_predict(self, interaction):
         item_seq = interaction[self.ITEM_SEQ]

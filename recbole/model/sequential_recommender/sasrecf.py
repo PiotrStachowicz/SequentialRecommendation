@@ -12,6 +12,7 @@ import torch
 from torch import nn
 import numpy as np
 import copy
+import wandb
 
 from recbole.model.abstract_recommender import SequentialRecommender
 from recbole.model.layers import TransformerEncoder, FeatureSeqEmbLayer
@@ -50,17 +51,22 @@ class SASRecF(SequentialRecommender):
         self.item_embedding = nn.Embedding(self.n_items, self.hidden_size, padding_idx=0)
         self.position_embedding = nn.Embedding(self.max_seq_length, self.hidden_size)
 
+        wandb.init(
+            project="SequentialRecommendation",
+            name= 'SASRecF_' + config['wandb_run_name']
+        )
+
         layer_list = []
 
         for i, feature in enumerate(self.selected_features):
             feature_type = self.feature_type[i]
-
+            
             if feature_type == 'static':
                 layer_list.append(
                     nn.Embedding.from_pretrained(
                         torch.from_numpy(
                             dataset.get_preload_weight(
-                                list(dataset.config['preload_weight'].keys())[i]
+                                f"{feature.split('_')[0]}_id"
                             ).astype(np.float32)
                         )
                     )
@@ -91,7 +97,9 @@ class SASRecF(SequentialRecommender):
             layer_norm_eps=self.layer_norm_eps
         )
 
-        self.concat_layer = nn.Linear(self.hidden_size * self.num_feature_field, self.hidden_size)
+        concat_input_dim = self.hidden_size + sum(self.attribute_hidden_size)
+        
+        self.concat_layer = nn.Linear(concat_input_dim, self.hidden_size)
 
         self.LayerNorm = nn.LayerNorm(self.hidden_size, eps=self.layer_norm_eps)
         self.dropout = nn.Dropout(self.hidden_dropout_prob)
@@ -105,7 +113,7 @@ class SASRecF(SequentialRecommender):
 
         # parameters initialization
         self.apply(self._init_weights)
-        self.other_parameter_name = ['feature_embed_layer']
+        self.other_parameter_name = ['feature_embed_layer_list']
 
     def _init_weights(self, module):
         """ Initialize the weights """
@@ -191,11 +199,13 @@ class SASRecF(SequentialRecommender):
             pos_score = torch.sum(seq_output * pos_items_emb, dim=-1)  # [B]
             neg_score = torch.sum(seq_output * neg_items_emb, dim=-1)  # [B]
             loss = self.loss_fct(pos_score, neg_score)
+            wandb.log({'total_loss': loss})
             return loss
         else:  # self.loss_type = 'CE'
             test_item_emb = self.item_embedding.weight
             logits = torch.matmul(seq_output, test_item_emb.transpose(0, 1))
             loss = self.loss_fct(logits, pos_items)
+            wandb.log({'total_loss': loss})
             return loss
 
     def predict(self, interaction):

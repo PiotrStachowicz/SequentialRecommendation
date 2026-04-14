@@ -1,0 +1,282 @@
+# -*- coding: utf-8 -*-
+# @Time    : 2020/9/18 11:32
+# @Author  : Hui Wang
+# @Email   : hui.wang@ruc.edu.cn
+
+r"""
+NOVA based on SASRecF
+################################################
+"""
+
+import torch
+from torch import nn
+import numpy as np
+import copy
+import wandb
+import math
+
+from recbole.model.abstract_recommender import SequentialRecommender
+from recbole.model.layers import NOVATransformerEncoder, FeatureSeqEmbLayer
+from recbole.model.loss import BPRLoss
+from recbole.model.denoising import GaussianDiffusion
+
+
+class MLP(nn.Module):
+    def __init__(self, input_dim=4096, output_dim=128, dropout=0.1, device='cuda'):
+        super().__init__()
+
+        inp_power = int(math.log2(input_dim))
+        out_power = int(math.log2(output_dim))
+
+        last_power = out_power + 1
+
+        module_list = []
+        for power in range(inp_power, out_power + 1, -1):
+            module_list.append(nn.Linear(in_features=2**power, out_features=2**(power-1)))
+            module_list.append(nn.ReLU())
+            module_list.append(nn.Dropout(dropout))
+
+        module_list.append(nn.Linear(in_features=2**last_power, out_features=output_dim))
+        module_list.append(nn.LayerNorm(output_dim))
+
+        self.net = nn.Sequential(*module_list)
+        self.to(device)
+    
+    def forward(self, X):
+        # noise = torch.randn_like(X) * 0.01
+
+        # noisy_res = self.net(X + noise)
+        res = self.net(X)
+        
+        # # MSE error for consistency
+        # self.consistency_loss = torch.mean((noisy_res - res) ** 2)
+
+        return res
+
+
+class NOVA_Denoising(SequentialRecommender):
+    """This is an extension of SASRec, which concatenates item representations and item attribute representations
+    as the input to the model.
+    """
+
+    def __init__(self, config, dataset):
+        super(NOVA_Denoising, self).__init__(config, dataset)
+
+        # load parameters info
+        self.n_layers = config['n_layers']
+        self.n_heads = config['n_heads']
+        self.hidden_size = config['hidden_size']  # same as embedding_size
+        self.inner_size = config['inner_size']  # the dimensionality in feed-forward layer
+        self.attribute_hidden_size = config['attribute_hidden_size']
+        self.orig_attribute_hidden_size = config['orig_attribute_hidden_size']
+        self.hidden_dropout_prob = config['hidden_dropout_prob']
+        self.attn_dropout_prob = config['attn_dropout_prob']
+        self.hidden_act = config['hidden_act']
+        self.layer_norm_eps = config['layer_norm_eps']
+
+        self.selected_features = config['selected_features']
+        self.feature_type = config['feature_type']
+        self.pooling_mode = config['pooling_mode']
+        self.device = config['device']
+        self.num_feature_field = len(config['selected_features'])
+
+        self.initializer_range = config['initializer_range']
+        self.loss_type = config['loss_type']
+
+        # define layers and loss
+        self.item_embedding = nn.Embedding(self.n_items, self.hidden_size, padding_idx=0)
+        self.position_embedding = nn.Embedding(self.max_seq_length, self.hidden_size)
+
+        wandb.init(
+            project="SequentialRecommendation",
+            name='NOVA_Denoising_' + config['wandb_run_name']
+        )
+
+        layer_list = []
+        diffusion = []
+
+        for i, feature in enumerate(self.selected_features):
+            feature_type = self.feature_type[i]
+
+            if feature_type == 'static':
+                feature_dim = self.orig_attribute_hidden_size[i]
+                emb_layer = nn.Embedding.from_pretrained(
+                    torch.from_numpy(
+                        dataset.get_preload_weight(
+                            f"{feature.split('_')[0]}_id"
+                        ).astype(np.float32)
+                    )
+                )
+                emb_layer.original_weight = emb_layer.weight.detach().clone().to(self.device)
+                emb_layer.mlp = MLP(
+                    input_dim=feature_dim, 
+                    output_dim=self.attribute_hidden_size[i], 
+                    device=self.device
+                )
+                layer_list.append(emb_layer)
+                diffusion.append(GaussianDiffusion(
+                    config['diffusion']))
+            elif feature_type == 'categorical':
+                layer_list.append(
+                    copy.deepcopy(
+                        FeatureSeqEmbLayer(
+                            dataset,
+                            self.attribute_hidden_size[i],
+                            [self.selected_features[i]],
+                            self.pooling_mode,
+                            self.device
+                        )
+                    )
+                )
+                diffusion.append(nn.Identity())
+
+        self.feature_embed_layer_list = nn.ModuleList(layer_list)
+        self.diffusion = nn.ModuleList(diffusion)
+
+        self.trm_encoder = NOVATransformerEncoder(
+            n_layers=self.n_layers,
+            n_heads=self.n_heads,
+            hidden_size=self.hidden_size,
+            inner_size=self.inner_size,
+            hidden_dropout_prob=self.hidden_dropout_prob,
+            attn_dropout_prob=self.attn_dropout_prob,
+            hidden_act=self.hidden_act,
+            layer_norm_eps=self.layer_norm_eps
+        )
+
+        self.concat_layer = nn.Linear(self.hidden_size * self.num_feature_field, self.hidden_size)
+
+        self.LayerNorm = nn.LayerNorm(self.hidden_size, eps=self.layer_norm_eps)
+        self.dropout = nn.Dropout(self.hidden_dropout_prob)
+
+        if self.loss_type == 'BPR':
+            self.loss_fct = BPRLoss()
+        elif self.loss_type == 'CE':
+            self.loss_fct = nn.CrossEntropyLoss()
+        else:
+            raise NotImplementedError("Make sure 'loss_type' in ['BPR', 'CE']!")
+
+        # parameters initialization
+        self.apply(self._init_weights)
+        self.other_parameter_name = ['feature_embed_layer_list']
+
+        self.l = config['lambda']
+
+    def _init_weights(self, module):
+        """ Initialize the weights """
+        for entry in self.feature_embed_layer_list:
+            if module is entry:
+                return
+
+        if isinstance(module, (nn.Linear, nn.Embedding)):
+            # Slightly different from the TF version which uses truncated_normal for initialization
+            # cf https://github.com/pytorch/pytorch/pull/5617
+            module.weight.data.normal_(mean=0.0, std=self.initializer_range)
+        elif isinstance(module, nn.LayerNorm):
+            module.bias.data.zero_()
+            module.weight.data.fill_(1.0)
+        if isinstance(module, nn.Linear) and module.bias is not None:
+            module.bias.data.zero_()
+
+    def get_attention_mask(self, item_seq):
+        """Generate left-to-right uni-directional attention mask for multi-head attention."""
+        attention_mask = (item_seq > 0).long()
+        extended_attention_mask = attention_mask.unsqueeze(1).unsqueeze(2)  # torch.int64
+        # mask for left-to-right unidirectional
+        max_len = attention_mask.size(-1)
+        attn_shape = (1, max_len, max_len)
+        subsequent_mask = torch.triu(torch.ones(attn_shape), diagonal=1)  # torch.uint8
+        subsequent_mask = (subsequent_mask == 0).unsqueeze(1)
+        subsequent_mask = subsequent_mask.long().to(item_seq.device)
+        extended_attention_mask = extended_attention_mask * subsequent_mask
+        extended_attention_mask = extended_attention_mask.to(dtype=next(self.parameters()).dtype)  # fp16 compatibility
+        extended_attention_mask = (1.0 - extended_attention_mask) * -10000.0
+        return extended_attention_mask
+
+    def forward(self, item_seq, item_seq_len):
+        item_emb = self.item_embedding(item_seq)
+
+        # position embedding
+        position_ids = torch.arange(item_seq.size(1), dtype=torch.long, device=item_seq.device)
+        position_ids = position_ids.unsqueeze(0).expand_as(item_seq)
+        position_embedding = self.position_embedding(position_ids)
+
+        feature_table = []
+        loss_denoising_ = 0
+
+        for i, feature_embed_layer in enumerate(self.feature_embed_layer_list):
+            if self.feature_type[i] == 'static':
+                static_embedding = feature_embed_layer(item_seq)
+                reduced_embedding = feature_embed_layer.mlp(static_embedding)
+                reduced_embedding, loss_denoising = self.diffusion[i](reduced_embedding)
+                feature_table.append(reduced_embedding.unsqueeze(-2))
+                loss_denoising_ += loss_denoising
+            elif self.feature_type[i] == 'categorical':
+                sparse_embedding, dense_embedding = feature_embed_layer(None, item_seq)
+                sparse_embedding = sparse_embedding['item']
+                dense_embedding = dense_embedding['item']
+                # concat the sparse embedding and float embedding
+                if sparse_embedding is not None:
+                    feature_table.append(sparse_embedding)
+                if dense_embedding is not None:
+                    feature_table.append(dense_embedding)
+
+        feature_table = torch.cat(feature_table, dim=-2)
+        table_shape = feature_table.shape
+        feat_num, embedding_size = table_shape[-2], table_shape[-1]
+        feature_emb = feature_table.view(table_shape[:-2] + (feat_num * embedding_size,))
+        input_concat = torch.cat((item_emb, feature_emb), -1)  # [B 1+field_num*H]
+
+        input_emb = self.concat_layer(input_concat)  # TUTAJ NASTĘPUJE FUZJA -- możliwe inne opcje
+        input_emb = input_emb + position_embedding
+        input_emb = self.LayerNorm(input_emb)
+        input_emb = self.dropout(input_emb)
+
+        extended_attention_mask = self.get_attention_mask(item_seq)
+        # TODO: czy dać pozycyjne do item_emb (values)?
+        trm_output = self.trm_encoder(item_emb + position_embedding, input_emb, extended_attention_mask, output_all_encoded_layers=True)
+        output = trm_output[-1]
+        seq_output = self.gather_indexes(output, item_seq_len - 1)
+        return seq_output, loss_denoising_  # [B H]
+
+    def calculate_loss(self, interaction):
+        item_seq = interaction[self.ITEM_SEQ]
+        item_seq_len = interaction[self.ITEM_SEQ_LEN]
+        seq_output, loss_denoising_ = self.forward(item_seq, item_seq_len)
+        pos_items = interaction[self.POS_ITEM_ID]
+        if self.loss_type == 'BPR':
+            neg_items = interaction[self.NEG_ITEM_ID]
+            pos_items_emb = self.item_embedding(pos_items)
+            neg_items_emb = self.item_embedding(neg_items)
+            pos_score = torch.sum(seq_output * pos_items_emb, dim=-1)  # [B]
+            neg_score = torch.sum(seq_output * neg_items_emb, dim=-1)  # [B]
+            loss = self.loss_fct(pos_score, neg_score)
+        else:  # self.loss_type = 'CE'
+            test_item_emb = self.item_embedding.weight
+            logits = torch.matmul(seq_output, test_item_emb.transpose(0, 1))
+            loss = self.loss_fct(logits, pos_items)
+
+        wandb.log({
+            'total_loss': loss + self.l * loss_denoising_.sum(),
+            'denoise_loss': loss_denoising_,
+            'item_loss': loss
+        })
+
+        return loss + loss_denoising_.sum() * self.l
+
+    def predict(self, interaction):
+        item_seq = interaction[self.ITEM_SEQ]
+        item_seq_len = interaction[self.ITEM_SEQ_LEN]
+        test_item = interaction[self.ITEM_ID]
+        seq_output, _ = self.forward(item_seq, item_seq_len)
+        test_item_emb = self.item_embedding(test_item)
+        scores = torch.mul(seq_output, test_item_emb).sum(dim=1)
+        return scores
+
+    def full_sort_predict(self, interaction):
+        item_seq = interaction[self.ITEM_SEQ]
+        item_seq_len = interaction[self.ITEM_SEQ_LEN]
+        seq_output, _ = self.forward(item_seq, item_seq_len)
+        test_items_emb = self.item_embedding.weight
+        scores = torch.matmul(seq_output, test_items_emb.transpose(0, 1))  # [B, item_num]
+        return scores
